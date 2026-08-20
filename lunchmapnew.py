@@ -1,13 +1,12 @@
 import os
 import time
+import json
 import base64
-import requests
 from io import BytesIO
 from datetime import datetime
 
 import folium
 from PIL import Image
-import pytesseract
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
@@ -39,7 +38,80 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 주소 → 좌표 및 도보 거리 계산 (누락 수정 완료)
+# 3. 오정 메뉴 (요일별 Crop)
+# ==========================================================
+def crop_ojeong_by_weekday(image_path):
+    try:
+        img = Image.open(image_path)
+        width, height = img.size
+
+        left_margin = width * 0.16
+        right_margin = width * 0.83
+        top_margin = height * 0.18
+        bottom_margin = height * 0.88
+
+        table_width = right_margin - left_margin
+        col_width = table_width / 5
+
+        crop_left = left_margin + (col_width * ojeong_weekday_index)
+        crop_right = crop_left + col_width
+
+        cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
+
+        max_height = 700
+        if cropped_img.height > max_height:
+            ratio = max_height / cropped_img.height
+            new_width = int(cropped_img.width * ratio)
+            cropped_img = cropped_img.resize((new_width, max_height), Image.LANCZOS)
+
+        buffered = BytesIO()
+        cropped_img.save(buffered, format="JPEG", quality=95)
+        encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료")
+        return "data:image/jpeg;base64," + encoded_string
+    except Exception as e:
+        print(f"  -> [오정] Crop 실패 : {e}")
+        return None
+
+# ==========================================================
+# 4. 식당 목록 (총 5곳)
+# ==========================================================
+cafeteria_list = [
+    {
+        "name": "오정",
+        "address": "서울 금천구 가산디지털2로 30",
+        "type": "ojeong",
+        "url": OJEONG_IMAGE_PATH
+    },
+    {
+        "name": "온정찬",
+        "address": "서울 금천구 가산디지털1로 75-15",
+        "type": "kakao_posts",
+        "url": "https://pf.kakao.com/_UIdXn/posts"
+    },
+    {
+        "name": "런치투게더",
+        "address": "서울 금천구 가산디지털1로 58",
+        "type": "kakao_profile",
+        "url": "https://pf.kakao.com/_swtYxl"
+    },
+    {
+        "name": "런치타임",
+        "address": "서울 금천구 가산디지털2로 24",
+        "type": "threads",
+        "url": "https://www.threads.net/@lunchtime_ypp"
+    },
+    {
+        "name": "밥심",
+        "address": "서울 금천구 가산디지털2로 46",
+        "type": "kakao_first",
+        "url": "https://pf.kakao.com/_mHWxjX"
+    }
+]
+
+# ==========================================================
+# 5. 주소 → 좌표 및 도보 거리 계산
 # ==========================================================
 geolocator = Nominatim(user_agent="gasan_lunch_map")
 
@@ -65,85 +137,6 @@ def calculate_walking_info(dest_coords):
         return 0, 0
 
 # ==========================================================
-# 4. OCR 공통 함수 (이미지/URL을 텍스트로 변환)
-# ==========================================================
-def ocr_image_to_text(image_source):
-    try:
-        if isinstance(image_source, Image.Image):
-            img = image_source
-        elif isinstance(image_source, str) and image_source.startswith("http"):
-            response = requests.get(image_source, headers={'User-Agent': 'Mozilla/5.0'})
-            img = Image.open(BytesIO(response.content))
-        else:
-            img = Image.open(image_source)
-        
-        text = pytesseract.image_to_string(img, lang='kor')
-        lines = [line.strip() for line in text.split('\n') if line.strip()]
-        if not lines:
-            return "<div>메뉴 인식 실패</div>"
-            
-        formatted_text = "<br>".join(lines)
-        return f'<div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:15px; line-height:1.7; color:#333;">{formatted_text}</div>'
-    except Exception as e:
-        return f"<div>OCR 오류: {e}</div>"
-
-# 오정 요일별 크롭 후 이미지 객체 반환 함수
-def get_ojeong_cropped_image(image_path):
-    try:
-        img = Image.open(image_path)
-        width, height = img.size
-        left_margin = width * 0.16
-        right_margin = width * 0.83
-        top_margin = height * 0.18
-        bottom_margin = height * 0.88
-        table_width = right_margin - left_margin
-        col_width = table_width / 5
-        crop_left = left_margin + (col_width * ojeong_weekday_index)
-        crop_right = crop_left + col_width
-        cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
-        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료")
-        return cropped_img
-    except Exception as e:
-        print(f"  -> [오정] Crop 실패 : {e}")
-        return None
-
-# ==========================================================
-# 5. 식당 목록 (총 5곳)
-# ==========================================================
-cafeteria_list = [
-    {
-        "name": "오정",
-        "address": "서울 금천구 가산디지털2로 30",
-        "type": "ojeong_ocr",
-        "url": OJEONG_IMAGE_PATH
-    },
-    {
-        "name": "온정찬",
-        "address": "서울 금천구 가산디지털1로 75-15",
-        "type": "kakao_posts_ocr",
-        "url": "https://pf.kakao.com/_UIdXn/posts"
-    },
-    {
-        "name": "런치투게더",
-        "address": "서울 금천구 가산디지털1로 58",
-        "type": "kakao_profile_ocr",
-        "url": "https://pf.kakao.com/_swtYxl"
-    },
-    {
-        "name": "런치타임",
-        "address": "서울 금천구 가산디지털2로 24",
-        "type": "threads",
-        "url": "https://www.threads.net/@lunchtime_ypp"
-    },
-    {
-        "name": "밥심",
-        "address": "서울 금천구 가산디지털2로 46",
-        "type": "kakao_first_ocr",
-        "url": "https://pf.kakao.com/_mHWxjX"
-    }
-]
-
-# ==========================================================
 # 6. Selenium 설정
 # ==========================================================
 chrome_options = Options()
@@ -162,7 +155,7 @@ driver = webdriver.Chrome(
 )
 
 # ==========================================================
-# 7. 각 채널별 이미지 URL 수집 함수들
+# 7. 온정찬 전용 (카카오 포스트 이미지 수집)
 # ==========================================================
 def get_kakao_posts_image(driver, url):
     print(f"  -> [온정찬] 카카오 게시물 이미지 수집 중")
@@ -194,6 +187,9 @@ def get_kakao_posts_image(driver, url):
         print(f"  -> [온정찬] 오류 : {e}")
         return None
 
+# ==========================================================
+# 8. 카카오 - 런치투게더 전용
+# ==========================================================
 def get_kakao_profile_image(driver, url, store_name):
     print(f"  -> [{store_name}] 카카오 프로필 이미지 접근")
     try:
@@ -262,6 +258,9 @@ def get_kakao_profile_image(driver, url, store_name):
         print(f"  -> [{store_name}] 카카오 오류 : {e}")
         return None
 
+# ==========================================================
+# 9. 카카오 - 밥심 전용
+# ==========================================================
 def get_kakao_first_image(driver, url, store_name):
     print(f"  -> [{store_name}] 카카오 최신 메뉴 이미지 수집")
     try:
@@ -291,6 +290,9 @@ def get_kakao_first_image(driver, url, store_name):
         print(f"  -> [{store_name}] 카카오 오류 : {e}")
         return None
 
+# ==========================================================
+# 10. 스레드(Threads) - 런치타임 전용 크롤링
+# ==========================================================
 def get_threads_menu(driver, url):
     print(f"  -> [런치타임] 스레드 메뉴 수집 중 ({url})")
     try:
@@ -348,11 +350,11 @@ def get_threads_menu(driver, url):
         return "<div>스레드 메뉴를 불러오지 못했습니다.</div>"
 
 # ==========================================================
-# 8. 식당별 메뉴 수집 (전체 OCR 적용)
+# 11. 식당별 메뉴 수집
 # ==========================================================
 scraped_data = []
 
-print(f"\n{'='*60}\n자동 수집 시작 (총 5곳 OCR 통일)\n{'='*60}")
+print(f"\n{'='*60}\n자동 수집 시작 (총 5곳)\n{'='*60}")
 
 for item in cafeteria_list:
     print(f"\n[{item['name']}] 정보 수집 중...")
@@ -360,21 +362,21 @@ for item in cafeteria_list:
     dist, walk_min = calculate_walking_info((lat, lng))
     html_content = ""
 
-    if item["type"] == "ojeong_ocr":
-        cropped_img = get_ojeong_cropped_image(item["url"])
-        html_content = ocr_image_to_text(cropped_img) if cropped_img else "<div>오정 메뉴 인식 실패</div>"
+    if item["type"] == "ojeong":
+        src = crop_ojeong_by_weekday(item["url"])
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
-    elif item["type"] == "kakao_posts_ocr":
+    elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
-        html_content = ocr_image_to_text(img_src) if img_src else "<div>온정찬 메뉴 이미지 없음</div>"
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">온정찬 메뉴 이미지를 찾지 못했습니다.</div>'
 
-    elif item["type"] == "kakao_profile_ocr":
+    elif item["type"] == "kakao_profile":
         img_src = get_kakao_profile_image(driver, item["url"], item["name"])
-        html_content = ocr_image_to_text(img_src) if img_src else "<div>런치투게더 메뉴 이미지 없음</div>"
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
-    elif item["type"] == "kakao_first_ocr":
+    elif item["type"] == "kakao_first":
         img_src = get_kakao_first_image(driver, item["url"], item["name"])
-        html_content = ocr_image_to_text(img_src) if img_src else "<div>밥심 메뉴 이미지 없음</div>"
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "threads":
         html_content = get_threads_menu(driver, item["url"])
@@ -383,9 +385,14 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 9. 지도 생성 및 대시보드 UI 설정
+# 12. Selenium 종료 및 구글 지도 생성 (개별 클릭 정상화 & 버튼 회피형 가로 정렬)
 # ==========================================================
 driver.quit()
+
+print()
+print("=" * 60)
+print("자동 수집 완료!")
+print("=" * 60)
 
 menu_map = folium.Map(
     location=[37.4795, 126.8820],
@@ -420,6 +427,7 @@ custom_header = """
     border-radius: 12px !important;
 }
 
+/* 우측 상단 '지도 정위치' 버튼 */
 .reset-map-btn {
     position: fixed;
     top: 15px;
@@ -436,6 +444,7 @@ custom_header = """
     color: #111;
 }
 
+/* 우측 상단 '메뉴 한번에 보기 / 닫기' 버튼 */
 .toggle-all-btn {
     position: fixed;
     top: 70px;
@@ -472,6 +481,7 @@ window.addEventListener('load', function() {
                 initialCenter = mapObj.getCenter();
                 initialZoom = mapObj.getZoom();
 
+                // 1. 지도 정위치 버튼 기능
                 var btn = document.createElement('div');
                 btn.innerHTML = '🗺️ 지도 정위치';
                 btn.className = 'reset-map-btn';
@@ -492,6 +502,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(btn);
 
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (지도 고정 + 우측 버튼 영역 회피형 가로 정렬)
                 var toggleBtn = document.createElement('div');
                 toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                 toggleBtn.className = 'toggle-all-btn';
@@ -501,19 +512,22 @@ window.addEventListener('load', function() {
                         let curCenter = mapObj.getCenter();
                         let curZoom = mapObj.getZoom();
 
+                        // 모든 팝업 열기
                         mapObj.eachLayer(function(layer) {
                             if (layer instanceof L.Marker && layer.getPopup()) {
                                 layer.openPopup();
                             }
                         });
                         
+                        // 지도를 원래 상태로 즉시 고정 (움직임 방지)
                         mapObj.setView(curCenter, curZoom, {animate: false});
                         
+                        // 5개 팝업을 상단에 바짝 붙이고, 우측 버튼 영역(200px)을 피해 슬림하게 가로 정렬
                         setTimeout(function() {
                             var popups = document.querySelectorAll('.leaflet-popup');
                             if (popups.length > 0) {
                                 var screenW = window.innerWidth;
-                                var maxRight = screenW - 210;
+                                var maxRight = screenW - 210; // 우측 버튼 공간 확보
                                 var startLeft = 15;
                                 var availableW = maxRight - startLeft;
                                 var popupW = Math.floor((availableW - (6 * (popups.length - 1))) / popups.length);
@@ -521,7 +535,7 @@ window.addEventListener('load', function() {
 
                                 popups.forEach(function(p, index) {
                                     p.style.position = 'fixed';
-                                    p.style.top = '50px';
+                                    p.style.top = '50px'; // 상단에 바짝 붙임
                                     
                                     var contentWrapper = p.querySelector('.leaflet-popup-content-wrapper');
                                     if (contentWrapper) {
@@ -543,6 +557,7 @@ window.addEventListener('load', function() {
                         toggleBtn.innerHTML = '❌ 메뉴 닫기';
                         allPopupsOpen = true;
                     } else {
+                        // 모든 팝업 닫기
                         mapObj.eachLayer(function(layer) {
                             if (layer instanceof L.Marker && layer.getPopup()) {
                                 layer.closePopup();
@@ -557,6 +572,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(toggleBtn);
 
+                // 3. 개별 팝업이 닫힐 때 처리
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var anyOpen = false;
@@ -661,6 +677,7 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
+        # 개별 클릭 시에는 평소처럼 정상적으로 팝업 위치로 이동하도록 설정 복구
         popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False),
         tooltip=data["name"],
         icon=custom_icon
@@ -683,6 +700,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 5개 맛집 OCR 텍스트 통일 지도 생성 완료!")
+print("🎉 개별 클릭 정상화 & 버튼 회피형 가로 정렬 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
