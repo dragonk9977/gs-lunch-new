@@ -177,7 +177,6 @@ def get_kakao_posts_image(driver, url):
             except:
                 continue
         
-        # 날짜 매칭 실패 시 첫 번째 카카오 이미지 반환
         imgs = driver.find_elements(By.TAG_NAME, "img")
         for img in imgs:
             src = img.get_attribute("src")
@@ -386,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성
+# 12. Selenium 종료 및 구글 지도 생성 (메뉴 한번에 보기/닫기 토글 기능 포함)
 # ==========================================================
 driver.quit()
 
@@ -422,6 +421,7 @@ custom_header = """
     font-weight: bold !important;
 }
 
+/* 우측 상단 '전체보기' 버튼 */
 .reset-map-btn {
     position: fixed;
     top: 15px;
@@ -437,12 +437,34 @@ custom_header = """
     cursor: pointer;
     color: #111;
 }
+
+/* 우측 상단 '메뉴 한번에 보기 / 닫기' 버튼 */
+.toggle-all-btn {
+    position: fixed;
+    top: 70px;
+    right: 15px;
+    z-index: 99999;
+    background: #111111;
+    border: 3px solid #000000;
+    padding: 10px 16px;
+    font-weight: bold;
+    font-size: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    color: #ffffff;
+    text-align: center;
+}
+.toggle-all-btn:hover {
+    background: #333333;
+}
 </style>
 
 <script>
 let initialCenter = null;
 let initialZoom = null;
 let mapObj = null;
+let allPopupsOpen = false;
 
 window.addEventListener('load', function() {
     setTimeout(function() {
@@ -453,12 +475,16 @@ window.addEventListener('load', function() {
                 initialCenter = mapObj.getCenter();
                 initialZoom = mapObj.getZoom();
 
+                // 1. 전체보기 버튼 생성
                 var btn = document.createElement('div');
                 btn.innerHTML = '🗺️ 전체보기';
                 btn.className = 'reset-map-btn';
                 btn.onclick = function() {
                     if (mapObj) {
                         mapObj.closePopup();
+                        allPopupsOpen = false;
+                        var toggleBtn = document.querySelector('.toggle-all-btn');
+                        if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                         if (initialCenter && initialZoom) {
                             mapObj.setView(initialCenter, initialZoom);
                         }
@@ -466,11 +492,30 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(btn);
 
-                mapObj.on('popupclose', function() {
-                    if (initialCenter && initialZoom) {
-                        mapObj.setView(initialCenter, initialZoom);
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 생성
+                var toggleBtn = document.createElement('div');
+                toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                toggleBtn.className = 'toggle-all-btn';
+                toggleBtn.onclick = function() {
+                    if (!mapObj) return;
+                    if (!allPopupsOpen) {
+                        // 모든 마커의 팝업을 동시에 열기
+                        mapObj.eachLayer(function(layer) {
+                            if (layer instanceof L.Marker && layer.getPopup()) {
+                                layer.openPopup();
+                            }
+                        });
+                        toggleBtn.innerHTML = '❌ 메뉴 닫기';
+                        allPopupsOpen = true;
+                    } else {
+                        // 모든 팝업 닫기
+                        mapObj.closePopup();
+                        toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                        allPopupsOpen = false;
                     }
-                });
+                };
+                document.body.appendChild(toggleBtn);
+
                 break;
             }
         }
@@ -481,6 +526,9 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         if (mapObj) {
             mapObj.closePopup();
+            allPopupsOpen = false;
+            var toggleBtn = document.querySelector('.toggle-all-btn');
+            if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
         }
     }
 });
@@ -526,7 +574,8 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
-        popup=folium.Popup(popup_html, max_width=380, close_onclick=False),
+        # auto_close=False를 주어 여러 팝업이 동시에 열릴 수 있도록 설정
+        popup=folium.Popup(popup_html, max_width=380, auto_close=False, close_onclick=False),
         tooltip=data["name"],
         icon=custom_icon
     ).add_to(menu_map)
@@ -548,6 +597,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 5개 맛집 전체 지도 생성 완료!")
+print("🎉 대시보드 토글 기능 포함 5개 맛집 지도 생성 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
