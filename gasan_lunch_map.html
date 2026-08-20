@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_0d943fe20e7029c7ccb924acc4f5a4bb {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+<style>
+.reset-map-btn { position: fixed; top: 15px; right: 15px; z-index: 99999; background: #fff; border: 3px solid #000; padding: 10px 16px; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); }
+</style>
+<script>
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        for (var key in window) {
+            if (window[key] && window[key] instanceof L.Map) {
+                var mapObj = window[key];
+                var btn = document.createElement('div');
+                btn.innerHTML = '🗺️ 전체보기';
+                btn.className = 'reset-map-btn';
+                btn.onclick = function() { mapObj.closePopup(); mapObj.setView([37.4790, 126.8820], 16); };
+                document.body.appendChild(btn);
+                break;
+            }
+        }
+    }, 500);
+});
+</script>
+    
+            <div class="folium-map" id="map_0d943fe20e7029c7ccb924acc4f5a4bb" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_0d943fe20e7029c7ccb924acc4f5a4bb = L.map(
+                "map_0d943fe20e7029c7ccb924acc4f5a4bb",
+                {
+                    center: [37.479, 126.882],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 16,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_728439f88a778cbc49196ba9ecf57e14 = L.tileLayer(
+                "https://mt1.google.com/vt/lyrs=m\u0026x={x}\u0026y={y}\u0026z={z}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Google",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_728439f88a778cbc49196ba9ecf57e14.addTo(map_0d943fe20e7029c7ccb924acc4f5a4bb);
+        
+    
+            var marker_17c3e9975e7605ebcf960f845af313ce = L.marker(
+                [37.4812, 126.8815],
+                {
+}
+            ).addTo(map_0d943fe20e7029c7ccb924acc4f5a4bb);
+        
+    
+            var div_icon_a161a6c3426f3e1d69b4aff6224e2900 = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px;\"\u003e\ubc25\uc2ec\u003c/div\u003e",
+  "className": "empty",
+});
+        
+    
+        var popup_17a8c538bc644523a31e9e5423638db8 = L.popup({
+  "maxWidth": 340,
+});
+
+        
+            
+                var html_afee0176fbcee08f0fd04d9705e731b3 = $(`<div id="html_afee0176fbcee08f0fd04d9705e731b3" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px; color:#333;">밥심</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 4분 (250m)</p>         <hr style="margin:5px 0;">         <div style='font-size:14px; text-align:center; color:#555;'>기본 식당 정보</div>     </div>     </div>`)[0];
+                popup_17a8c538bc644523a31e9e5423638db8.setContent(html_afee0176fbcee08f0fd04d9705e731b3);
+            
+        
+
+        marker_17c3e9975e7605ebcf960f845af313ce.bindPopup(popup_17a8c538bc644523a31e9e5423638db8)
+        ;
+
+        
+    
+    
+            marker_17c3e9975e7605ebcf960f845af313ce.bindTooltip(
+                `<div>
+                     밥심
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_17c3e9975e7605ebcf960f845af313ce.setIcon(div_icon_a161a6c3426f3e1d69b4aff6224e2900);
+            
+    
+            var marker_3c3ffef28a7e23cc4fffb7c8ba4dc4d6 = L.marker(
+                [37.478, 126.885],
+                {
+}
+            ).addTo(map_0d943fe20e7029c7ccb924acc4f5a4bb);
+        
+    
+            var div_icon_f643ce9a854f0ff1c77d8b2795b9ed2b = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px;\"\u003e\ub7f0\uce58\ud22c\uac8c\ub354\u003c/div\u003e",
+  "className": "empty",
+});
+        
+    
+        var popup_dc1fd74cea65192b1e20ca0f1573c625 = L.popup({
+  "maxWidth": 340,
+});
+
+        
+            
+                var html_5903f9ea8b4b6f699c142ce499408f18 = $(`<div id="html_5903f9ea8b4b6f699c142ce499408f18" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px; color:#333;">런치투게더</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 5분 (320m)</p>         <hr style="margin:5px 0;">         <div style='font-size:14px; text-align:center; color:#555;'>기본 식당 정보</div>     </div>     </div>`)[0];
+                popup_dc1fd74cea65192b1e20ca0f1573c625.setContent(html_5903f9ea8b4b6f699c142ce499408f18);
+            
+        
+
+        marker_3c3ffef28a7e23cc4fffb7c8ba4dc4d6.bindPopup(popup_dc1fd74cea65192b1e20ca0f1573c625)
+        ;
+
+        
+    
+    
+            marker_3c3ffef28a7e23cc4fffb7c8ba4dc4d6.bindTooltip(
+                `<div>
+                     런치투게더
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_3c3ffef28a7e23cc4fffb7c8ba4dc4d6.setIcon(div_icon_f643ce9a854f0ff1c77d8b2795b9ed2b);
+            
+    
+            var marker_2acf65dae0f85908f139d1f43934fa50 = L.marker(
+                [37.4785, 126.882],
+                {
+}
+            ).addTo(map_0d943fe20e7029c7ccb924acc4f5a4bb);
+        
+    
+            var div_icon_a3ccca5bc951bfa4e126a748701ca291 = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px;\"\u003e\ub7f0\uce58\ud0c0\uc784\u003c/div\u003e",
+  "className": "empty",
+});
+        
+    
+        var popup_54fa45f5a183145568d5f808b07e302a = L.popup({
+  "maxWidth": 340,
+});
+
+        
+            
+                var html_36061ed119c4c2435a8c1c9de27c208f = $(`<div id="html_36061ed119c4c2435a8c1c9de27c208f" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px; color:#333;">런치타임</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 3분 (180m)</p>         <hr style="margin:5px 0;">          <div style='font-size:15px; line-height:1.6; color:#333; text-align:left; padding:12px; background-color:#f9f9f9; border-radius:10px; border-left: 5px solid #2ecc71;'>     <strong style="color:#27ae60;">📢 오늘의 메뉴 (런치타임)</strong><br>     <hr style="border:0; border-top:1px solid #ddd; margin:10px 0;">     테스트 메뉴입니다. </div>      </div>     </div>`)[0];
+                popup_54fa45f5a183145568d5f808b07e302a.setContent(html_36061ed119c4c2435a8c1c9de27c208f);
+            
+        
+
+        marker_2acf65dae0f85908f139d1f43934fa50.bindPopup(popup_54fa45f5a183145568d5f808b07e302a)
+        ;
+
+        
+    
+    
+            marker_2acf65dae0f85908f139d1f43934fa50.bindTooltip(
+                `<div>
+                     런치타임
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_2acf65dae0f85908f139d1f43934fa50.setIcon(div_icon_a3ccca5bc951bfa4e126a748701ca291);
+            
+    
+            map_0d943fe20e7029c7ccb924acc4f5a4bb.fitBounds(
+                [[37.478, 126.8815], [37.4812, 126.885]],
+                {"padding": [50, 50]}
+            );
+        
+</script>
+</html>
