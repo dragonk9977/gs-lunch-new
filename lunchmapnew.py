@@ -252,7 +252,7 @@ def get_kakao_first_image(driver, url, store_name):
         return None
 
 # ==========================================================
-# 9. 스레드(Threads) - 런치타임 전용 크롤링 (정교한 필터링 적용)
+# 9. 스레드(Threads) - 런치타임 전용 크롤링 (당일 메뉴만 정밀 추출)
 # ==========================================================
 def get_threads_menu(driver, url):
     print(f"  -> [런치타임] 스레드 메뉴 수집 중 ({url})")
@@ -263,34 +263,56 @@ def get_threads_menu(driver, url):
         body_text = driver.find_element(By.TAG_NAME, "body").text
         lines = body_text.split("\n")
         
-        # 1. 프로필 상단 네비게이션 노이즈를 건너뛰기 위해 기준점('Reposts' 또는 '리포스트') 찾기
-        start_idx = 0
-        for i, line in enumerate(lines):
-            if line.strip() in ["Reposts", "리포스트", "Media", "미디어"]:
-                start_idx = i + 1
+        # 오늘 날짜 문자열 감지 ("8월20일" 또는 "8월 20일")
+        target_date1 = today_date_str_nospace  # "8월20일"
+        target_date2 = today_date_str_space   # "8월 20일"
         
-        # 기준점 이후의 텍스트만 남김
-        if start_idx > 0 and start_idx < len(lines):
-            lines = lines[start_idx:]
-            
+        start_idx = -1
+        for i, line in enumerate(lines):
+            line_clean = line.strip()
+            if target_date1 in line_clean or target_date2 in line_clean:
+                start_idx = i
+                break
+        
+        # 오늘 날짜를 못 찾았을 경우의 예외 처리 (상단 기본 영역부터 탐색)
+        if start_idx == -1:
+            start_idx = 0
+            for i, line in enumerate(lines):
+                if line.strip() in ["Reposts", "리포스트", "Media", "미디어"]:
+                    start_idx = i + 1
+                    break
+        
         filtered_lines = []
-        for line in lines:
+        # 오늘 날짜 이후의 텍스트만 수집
+        for line in lines[start_idx:]:
             line = line.strip()
             if not line:
                 continue
             
-            # 2. 불필요한 UI 텍스트 및 시간 정보 제거
-            if line in ["스레드", "답글", "미디어", "리포스트", "팔로우", "언급", "로그인", "가입하기", "lunchtime_ypp", "Home", "Follow", "Mention", "Threads", "Replies", "Media", "Reposts"]:
+            # 만약 다른 날짜 패턴(예: 이전 날짜인 '8월19일' 등)이 나오면 수집 중단
+            if "월" in line and "일" in line and target_date1 not in line and target_date2 not in line:
+                break
+                
+            # 불필요한 UI 텍스트 제외
+            if line in ["스레드", "답글", "미디어", "리포스트", "팔로우", "언급", "로그인", "가입하기", "lunchtime_ypp", "Home", "Follow", "Mention", "Threads", "Replies", "Media", "Reposts", "Translate"]:
                 continue
-            if "팔로워" in line or "followers" in line or "시간 전" in line or "일 전" in line or line.endswith("h") or line.endswith("d"):
+            if "팔로워" in line or "followers" in line or "시간 전" in line or "일 전" in line or line.endswith("h") or line.endswith("d") or line.isdigit():
                 continue
                 
             filtered_lines.append(line)
+        
+        # 오늘 포스팅의 마지막 해시태그(#)까지만 남기고 그 뒤의 찌꺼기 텍스트(Translate, 이전 메뉴 등)는 전부 자르기
+        last_tag_idx = -1
+        for i, l in enumerate(filtered_lines):
+            if l.startswith("#"):
+                last_tag_idx = i
+                
+        if last_tag_idx != -1:
+            filtered_lines = filtered_lines[:last_tag_idx + 1]
             
         if not filtered_lines:
-            return "<div>메뉴 내용을 찾지 못했습니다.</div>"
+            return "<div>오늘의 메뉴 내용을 찾지 못했습니다.</div>"
             
-        # 3. 실제 메뉴 항목들만 조합
         formatted_text = "<br>".join(filtered_lines)
         return f'<div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:15px; line-height:1.7; color:#333;">{formatted_text}</div>'
     except Exception as e:
