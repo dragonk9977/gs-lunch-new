@@ -2,11 +2,11 @@ import os
 import folium
 
 # MacroDroid로부터 전달받은 메뉴 텍스트
-payload_text = os.getenv("MENU_TEXT", "")
+payload_text = os.environ.get("MENU_TEXT", "")
 if not payload_text:
     payload_text = "MacroDroid 알림 대기 중..."
 
-# 식당 데이터 (주소 변환 없이 정확한 좌표를 직접 지정하여 오류 원천 차단)
+# 식당 데이터 (오정 제외, 3곳만 포함)
 scraped_data = []
 
 # 1. 밥심
@@ -44,25 +44,6 @@ scraped_data.append({
     'dist': 180,
     'walk_min': 3,
     'html': lunchtime_html
-})
-
-# 4. 오정 (원하지 않으시면 이 블록 전체를 삭제하시면 됩니다!)
-onjeongchan_html = """
-<div style='font-size:14px; line-height:1.6; color:#333; text-align:center; padding:12px; background-color:#fff8f0; border-radius:10px; border-left: 5px solid #e67e22;'>
-    <strong style="color:#e67e22; font-size:16px;">🔥 오정 (온정찬)</strong><br>
-    <p style="margin:8px 0; color:#555; font-size:13px;">최신 메뉴를 바로 확인할 수 있습니다.</p>
-    <a href="https://pf.kakao.com/_UIdXn/posts" target="_blank" style="display:inline-block; margin-top:8px; background:#fee500; color:#3c1e1e; padding:10px 18px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-        👉 오정 최신 메뉴 보러가기
-    </a>
-</div>
-"""
-scraped_data.append({
-    'name': '오정',
-    'lat': 37.4798,
-    'lng': 126.8835,
-    'dist': 200,
-    'walk_min': 3,
-    'html': onjeongchan_html
 })
 
 # 구글 지도 생성
@@ -134,4 +115,4 @@ if all_lats and all_lngs:
 
 # 지도 저장
 menu_map.save("gasan_lunch_map.html")
-print("안정적인 고정 좌표 지도 생성 완료!")
+print("오정 제외 3곳 지도 생성 완료!")
