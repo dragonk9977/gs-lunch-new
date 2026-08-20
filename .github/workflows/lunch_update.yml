@@ -3,25 +3,19 @@ name: Auto-update lunch map
 on:
   schedule:
     - cron: '30 1 * * 1-5'
+  repository_dispatch:
+    types: [update_lunch]
   workflow_dispatch:
-    inputs:
-      menu_text:
-        description: '테스트용 메뉴 텍스트 입력'
-        required: false
-        default: '테스트 메뉴입니다.'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
@@ -30,14 +24,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run lunch script
-        env:
-          MENU_TEXT: ${{ github.event.inputs.menu_text }}
+      - name: Set up Virtual Display (Xvfb)
         run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Run lunch script with Virtual Display
+        run: |
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
           python lunchmapup.py
 
       - name: Commit and push generated html
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Fresh start: update lunch map"
-          file_pattern: gasan_lunch_map.html
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git reset --hard HEAD
+          git pull origin main --rebase
+          git add gasan_lunch_map.html
+          git commit -m "Auto-update lunch map for today" || exit 0
+          git push
