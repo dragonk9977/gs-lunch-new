@@ -19,20 +19,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # ==========================================================
-# 1. 사용자 설정 및 깃허브 이벤트 데이터 가져오기
+# 1. 사용자 설정
 # ==========================================================
-
-def get_manual_menu_from_github_event():
-    event_path = os.getenv('GITHUB_EVENT_PATH')
-    if event_path and os.path.exists(event_path):
-        try:
-            with open(event_path, 'r') as f:
-                event_data = json.load(f)
-                return event_data.get('client_payload', {}).get('menu_text', None)
-        except:
-            pass
-    return None
-
 OJEONG_IMAGE_PATH = "오정메뉴.jpg"
 OFFICE_ADDRESS = "서울 금천구 가산디지털2로 30"
 
@@ -52,7 +40,6 @@ print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요�
 # ==========================================================
 # 3. 오정 메뉴 (요일별 Crop)
 # ==========================================================
-
 def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
@@ -88,9 +75,8 @@ def crop_ojeong_by_weekday(image_path):
         return None
 
 # ==========================================================
-# 4. 식당 목록 (오정 + 런치투게더 + 런치타임 + 밥심)
+# 4. 식당 목록 (런치타임: 스레드로 교체 완료)
 # ==========================================================
-
 cafeteria_list = [
     {
         "name": "오정",
@@ -107,8 +93,8 @@ cafeteria_list = [
     {
         "name": "런치타임",
         "address": "서울 금천구 가산디지털2로 24",
-        "type": "instagram",
-        "url": "https://www.instagram.com/lunchtime_ypp/"
+        "type": "threads",
+        "url": "https://www.threads.net/@lunchtime_ypp"
     },
     {
         "name": "밥심",
@@ -121,7 +107,6 @@ cafeteria_list = [
 # ==========================================================
 # 5. 주소 → 좌표 및 도보 거리 계산
 # ==========================================================
-
 geolocator = Nominatim(user_agent="gasan_lunch_map")
 
 def get_coords(address):
@@ -148,7 +133,6 @@ def calculate_walking_info(dest_coords):
 # ==========================================================
 # 6. Selenium 설정
 # ==========================================================
-
 chrome_options = Options()
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
@@ -167,7 +151,6 @@ driver = webdriver.Chrome(
 # ==========================================================
 # 7. 카카오 - 런치투게더 전용
 # ==========================================================
-
 def get_kakao_profile_image(driver, url, store_name):
     print(f"  -> [{store_name}] 카카오 프로필 이미지 접근")
     try:
@@ -239,7 +222,6 @@ def get_kakao_profile_image(driver, url, store_name):
 # ==========================================================
 # 8. 카카오 - 밥심 전용
 # ==========================================================
-
 def get_kakao_first_image(driver, url, store_name):
     print(f"  -> [{store_name}] 카카오 최신 메뉴 이미지 수집")
     try:
@@ -270,95 +252,46 @@ def get_kakao_first_image(driver, url, store_name):
         return None
 
 # ==========================================================
-# 9. 인스타그램 - 런치타임
+# 9. 스레드(Threads) - 런치타임 전용 크롤링
 # ==========================================================
-
-def get_instagram_menu(driver, url):
+def get_threads_menu(driver, url):
+    print(f"  -> [런치타임] 스레드 메뉴 수집 중 ({url})")
     try:
         driver.get(url)
-        time.sleep(3)
-        post_links = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.XPATH, "//a[contains(@href, '/p/')]"))
-        )
-        post_urls = []
-        for link in post_links:
-            href = link.get_attribute("href")
-            if href and href not in post_urls:
-                post_urls.append(href)
-        post_urls = post_urls[:5]
-        if not post_urls:
-            return "<div>게시물을 찾지 못했습니다.</div>"
+        time.sleep(4)
         
-        target_text = None
-        for index, post_url in enumerate(post_urls):
-            try:
-                driver.get(post_url)
-                time.sleep(2)
-                try:
-                    more_btn = driver.find_element(By.XPATH, "//span[contains(text(), '더 보기')] | //div[contains(text(), '더 보기')]")
-                    driver.execute_script("arguments[0].click();", more_btn)
-                    time.sleep(1)
-                except:
-                    pass
-                page_text = driver.find_element(By.TAG_NAME, "article").text
-                if today_date_str_space in page_text or today_date_str_nospace in page_text or f"{today_weekday}요일" in page_text:
-                    target_text = page_text
-                    break
-            except:
-                pass
+        # 페이지 본문 텍스트 전체를 가져와서 불필요한 UI 요소를 제외하고 첫 번째 포스트 추출
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        lines = body_text.split("\n")
         
-        if target_text is None and post_urls:
-            driver.get(post_urls[0])
-            time.sleep(2)
-            try:
-                more_btn = driver.find_element(By.XPATH, "//span[contains(text(), '더 보기')] | //div[contains(text(), '더 보기')]")
-                driver.execute_script("arguments[0].click();", more_btn)
-                time.sleep(1)
-            except:
-                pass
-            target_text = driver.find_element(By.TAG_NAME, "article").text
-
-        if not target_text:
-            return "<div>메뉴 내용을 찾지 못했습니다.</div>"
-
-        lines = target_text.split("\n")
         filtered_lines = []
-        account_name = url.rstrip("/").split("/")[-1]
-        ui_keywords = ["팔로우", "Following", "AI 정보", "더 보기", "좋아요", "댓글", "게시물", "팔로잉"]
-
         for line in lines:
             line = line.strip()
-            if not line or line in ["•", "·"] or line.isdigit():
+            if not line:
                 continue
-            if line.startswith("#") or "naver.me" in line:
-                break
-            if line == account_name or line in ui_keywords:
+            # 스레드 UI 관련 불필요한 키워드 필터링
+            if line in ["스레드", "답글", "미디어", "리포스트", "팔로우", "언급", "로그인", "가입하기", "lunchtime_ypp"]:
                 continue
-            if any(kw in line for kw in ["시간 전", "일 전", "주 전", "개월 전", "년 전", "좋아요", "댓글 달기"]):
+            if "팔로워" in line or "시간 전" in line or "일 전" in line:
                 continue
             filtered_lines.append(line)
-
+            
         if not filtered_lines:
             return "<div>메뉴 내용을 찾지 못했습니다.</div>"
-
-        formatted_text = "<br>".join(filtered_lines)
+            
+        # 첫 번째 게시물의 메뉴 텍스트 영역만 깔끔하게 구성 (상위 15줄 내외)
+        formatted_text = "<br>".join(filtered_lines[:15])
         return f'<div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:15px; line-height:1.7; color:#333;">{formatted_text}</div>'
     except Exception as e:
-        return "<div>인스타그램 메뉴를 불러오지 못했습니다.</div>"
+        print(f"  -> [런치타임] 스레드 오류 : {e}")
+        return "<div>스레드 메뉴를 불러오지 못했습니다.</div>"
 
 # ==========================================================
 # 10. 식당별 메뉴 수집
 # ==========================================================
-
 scraped_data = []
-manual_menu = get_manual_menu_from_github_event()
 
-print(f"\n{'='*60}\n자동 수집 시작")
-if manual_menu:
-    print("  -> MacroDroid로부터 데이터를 받았습니다!")
-else:
-    print("  -> 받은 데이터가 없어 기존 방식대로 실행합니다.")
-print(f"{'='*60}")
+print(f"\n{'='*60}\n자동 수집 시작\n{'='*60}")
 
 for item in cafeteria_list:
     print(f"\n[{item['name']}] 정보 수집 중...")
@@ -378,11 +311,8 @@ for item in cafeteria_list:
         img_src = get_kakao_first_image(driver, item["url"], item["name"])
         html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; width:auto; height:auto; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
-    elif item["type"] == "instagram":
-        if manual_menu:
-            html_content = f'<div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:15px; line-height:1.7; color:#333;">{manual_menu.replace(chr(10), "<br>")}</div>'
-        else:
-            html_content = get_instagram_menu(driver, item["url"])
+    elif item["type"] == "threads":
+        html_content = get_threads_menu(driver, item["url"])
 
     scraped_data.append({"name": item["name"], "lat": lat, "lng": lng, "dist": dist, "walk_min": walk_min, "html": html_content})
     time.sleep(1.5)
@@ -390,7 +320,6 @@ for item in cafeteria_list:
 # ==========================================================
 # 11. Selenium 종료 및 구글 지도 생성
 # ==========================================================
-
 driver.quit()
 
 print()
@@ -416,7 +345,6 @@ custom_header = """
     font-family: 'KakaoBigFont', sans-serif !important;
 }
 
-/* 팝업 닫기(X) 버튼 확대 */
 .leaflet-popup-close-button {
     width: 40px !important;
     height: 40px !important;
@@ -426,7 +354,6 @@ custom_header = """
     font-weight: bold !important;
 }
 
-/* 우측 상단 '전체보기' 버튼 스타일 */
 .reset-map-btn {
     position: fixed;
     top: 15px;
@@ -553,6 +480,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 요일별 이미지 크롭 기능 포함 전체 지도 생성 완료!")
+print("🎉 스레드 런치타임 연동 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
