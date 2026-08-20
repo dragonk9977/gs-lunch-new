@@ -1,0 +1,5 @@
+selenium
+folium
+geopy
+pillow
+requests
