@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (팝업 가로 나란히 정렬 & 지도 고정)
+# 12. Selenium 종료 및 구글 지도 생성 (auto_pan=False 및 슬림 맞춤형 가로 정렬)
 # ==========================================================
 driver.quit()
 
@@ -496,36 +496,52 @@ window.addEventListener('load', function() {
                         var toggleBtn = document.querySelector('.toggle-all-btn');
                         if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                         if (initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom);
+                            mapObj.setView(initialCenter, initialZoom, {animate: false});
                         }
                     }
                 };
                 document.body.appendChild(btn);
 
-                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (지도는 고정하고 팝업을 가로로 예쁘게 배치)
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (화면 고정형 5개 슬림 가로 정렬)
                 var toggleBtn = document.createElement('div');
                 toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                 toggleBtn.className = 'toggle-all-btn';
                 toggleBtn.onclick = function() {
                     if (!mapObj) return;
                     if (!allPopupsOpen) {
-                        // 모든 팝업 열기
+                        // 모든 팝업 열기 (지도 이동 없음)
                         mapObj.eachLayer(function(layer) {
                             if (layer instanceof L.Marker && layer.getPopup()) {
                                 layer.openPopup();
                             }
                         });
                         
-                        // 지도는 고정된 상태에서, 팝업들을 화면 전체에 가로로 나란히 정렬
+                        // 5개 팝업을 화면 상단(top: 55px)에 바짝 붙이고, 겹치지 않게 가로 폭 자동 균등 배분
                         setTimeout(function() {
                             var popups = document.querySelectorAll('.leaflet-popup');
                             if (popups.length > 0) {
-                                var screenWidth = window.innerWidth;
-                                var step = screenWidth / (popups.length + 1);
+                                var screenW = window.innerWidth;
+                                var margin = 10;
+                                var totalW = screenW - (margin * 2);
+                                var popupW = Math.floor((totalW - (8 * (popups.length - 1))) / popups.length);
+                                if (popupW < 220) popupW = 220; // 최소 너비 보장
+
                                 popups.forEach(function(p, index) {
                                     p.style.position = 'fixed';
-                                    p.style.top = '120px';
-                                    p.style.left = (step * (index + 1) - 160) + 'px';
+                                    p.style.top = '55px'; // 상단에 바짝 붙여서 세로 잘림 방지
+                                    
+                                    var contentWrapper = p.querySelector('.leaflet-popup-content-wrapper');
+                                    if (contentWrapper) {
+                                        contentWrapper.style.width = popupW + 'px';
+                                    }
+                                    var content = p.querySelector('.leaflet-popup-content');
+                                    if (content) {
+                                        content.style.width = (popupW - 20) + 'px';
+                                        content.style.margin = '10px';
+                                    }
+                                    
+                                    var leftPos = margin + (index * (popupW + 8));
+                                    p.style.left = leftPos + 'px';
                                     p.style.transform = 'none';
                                 });
                             }
@@ -543,7 +559,7 @@ window.addEventListener('load', function() {
                         toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                         allPopupsOpen = false;
                         if (initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom);
+                            mapObj.setView(initialCenter, initialZoom, {animate: false});
                         }
                     }
                 };
@@ -562,6 +578,7 @@ window.addEventListener('load', function() {
                             allPopupsOpen = false;
                             var toggleBtn = document.querySelector('.toggle-all-btn');
                             if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                            
                             // 스타일 초기화
                             var popups = document.querySelectorAll('.leaflet-popup');
                             popups.forEach(function(p) {
@@ -569,9 +586,13 @@ window.addEventListener('load', function() {
                                 p.style.top = '';
                                 p.style.left = '';
                                 p.style.transform = '';
+                                var cw = p.querySelector('.leaflet-popup-content-wrapper');
+                                if (cw) cw.style.width = '';
+                                var c = p.querySelector('.leaflet-popup-content');
+                                if (c) { c.style.width = ''; c.style.margin = ''; }
                             });
                             if (initialCenter && initialZoom) {
-                                mapObj.setView(initialCenter, initialZoom);
+                                mapObj.setView(initialCenter, initialZoom, {animate: false});
                             }
                         }
                     }, 150);
@@ -600,9 +621,13 @@ document.addEventListener('keydown', function(e) {
                 p.style.top = '';
                 p.style.left = '';
                 p.style.transform = '';
+                var cw = p.querySelector('.leaflet-popup-content-wrapper');
+                if (cw) cw.style.width = '';
+                var c = p.querySelector('.leaflet-popup-content');
+                if (c) { c.style.width = ''; c.style.margin = ''; }
             });
             if (initialCenter && initialZoom) {
-                mapObj.setView(initialCenter, initialZoom);
+                mapObj.setView(initialCenter, initialZoom, {animate: false});
             }
         }
     }
@@ -649,7 +674,8 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
-        popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False),
+        # auto_pan=False를 추가하여 팝업이 열릴 때 지도가 움직이는 현상을 원천 차단
+        popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False, auto_pan=False),
         tooltip=data["name"],
         icon=custom_icon
     ).add_to(menu_map)
@@ -671,6 +697,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 팝업 가로 나란히 정렬 & 지도 고정 완료!")
+print("🎉 지도 고정 + 슬림 가로 정렬 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
