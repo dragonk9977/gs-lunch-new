@@ -1,0 +1,43 @@
+name: Auto-update lunch map
+
+on:
+  schedule:
+    - cron: '30 1 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      menu_text:
+        description: '테스트용 메뉴 텍스트 입력'
+        required: false
+        default: '테스트 메뉴입니다.'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run lunch script
+        env:
+          MENU_TEXT: ${{ github.event.inputs.menu_text }}
+        run: |
+          python lunchmapup.py
+
+      - name: Commit and push generated html
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Fresh start: update lunch map"
+          file_pattern: gasan_lunch_map.html
