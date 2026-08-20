@@ -677,7 +677,6 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
-        # 개별 클릭 시에는 평소처럼 정상적으로 팝업 위치로 이동하도록 설정 복구
         popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False),
         tooltip=data["name"],
         icon=custom_icon
