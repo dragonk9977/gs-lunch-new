@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # ★ 이 권한이 있어야 깃허브에 파일을 업로드(push)할 수 있습니다!
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
