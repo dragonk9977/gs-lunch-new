@@ -1,43 +1,43 @@
 name: Auto-update lunch map
 
 on:
-  schedule:
-    - cron: '30 1 * * 1-5'
-  repository_dispatch:
-    types: [update_lunch]
   workflow_dispatch:
+  # schedule:
+  #   - cron: '30 0 * * 1-5' # 필요 시 스케줄 설정
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.9'
 
+      # 1. 먼저 필요한 패키지와 OCR 엔진(Tesseract)을 설치합니다.
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install folium geopy pillow selenium webdriver-manager pytesseract requests
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-kor
 
+      # 2. 화면 출력을 위한 가상 디스플레이를 설치합니다.
       - name: Set up Virtual Display (Xvfb)
         run: |
-          sudo apt-get update
           sudo apt-get install -y xvfb
 
+      # 3. 마지막으로 스크립트를 실행합니다. (환경 구성이 끝난 후!)
       - name: Run lunch script with Virtual Display
         run: |
           export DISPLAY=:99
           Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
-          python lunchmapnew.py  # ★ 파일 이름에 맞게 수정됨
+          python lunchmapnew.py
 
+      # 4. 결과물을 푸시합니다.
       - name: Commit and push generated html
         run: |
           git config --global user.name "github-actions[bot]"
