@@ -36,7 +36,7 @@ jobs:
         run: |
           export DISPLAY=:99
           Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
-          python lunchmapup.py
+          python lunchmapnew.py  # ★ 파일 이름에 맞게 수정됨
 
       - name: Commit and push generated html
         run: |
