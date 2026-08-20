@@ -17,7 +17,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_920a5856e42674526f77a5ee9046d08b {
+                #map_44b15f1f3d5662b244490cfa67d4ab6b {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -55,19 +55,24 @@
     
     
 <style>
-.reset-map-btn { position: fixed; top: 15px; right: 15px; z-index: 99999; background: #fff; border: 3px solid #000; padding: 10px 16px; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); }
+.reset-map-btn {
+    position: fixed; top: 15px; right: 15px; z-index: 99999;
+    background: #fff; border: 3px solid #000; padding: 10px 16px;
+    font-weight: bold; border-radius: 10px; cursor: pointer;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3); font-size: 15px;
+}
 </style>
 <script>
+let mapObj = null;
+let initialCenter = [37.4790, 126.8820];
+let initialZoom = 16;
+
 window.addEventListener('load', function() {
     setTimeout(function() {
         for (var key in window) {
             if (window[key] && window[key] instanceof L.Map) {
-                var mapObj = window[key];
-                var btn = document.createElement('div');
-                btn.innerHTML = '🗺️ 전체보기';
-                btn.className = 'reset-map-btn';
-                btn.onclick = function() { mapObj.closePopup(); mapObj.setView([37.4790, 126.8820], 16); };
-                document.body.appendChild(btn);
+                mapObj = window[key];
+                window.mapObj = mapObj;
                 break;
             }
         }
@@ -75,14 +80,14 @@ window.addEventListener('load', function() {
 });
 </script>
     
-            <div class="folium-map" id="map_920a5856e42674526f77a5ee9046d08b" ></div>
+            <div class="folium-map" id="map_44b15f1f3d5662b244490cfa67d4ab6b" ></div>
         
 </body>
 <script>
     
     
-            var map_920a5856e42674526f77a5ee9046d08b = L.map(
-                "map_920a5856e42674526f77a5ee9046d08b",
+            var map_44b15f1f3d5662b244490cfa67d4ab6b = L.map(
+                "map_44b15f1f3d5662b244490cfa67d4ab6b",
                 {
                     center: [37.479, 126.882],
                     crs: L.CRS.EPSG3857,
@@ -99,7 +104,7 @@ window.addEventListener('load', function() {
 
         
     
-            var tile_layer_7aab4ef57cc5d500961e7b860b214039 = L.tileLayer(
+            var tile_layer_867603d086cbc386a78537d980cd3b64 = L.tileLayer(
                 "https://mt1.google.com/vt/lyrs=m\u0026x={x}\u0026y={y}\u0026z={z}",
                 {
   "minZoom": 0,
@@ -116,40 +121,41 @@ window.addEventListener('load', function() {
             );
         
     
-            tile_layer_7aab4ef57cc5d500961e7b860b214039.addTo(map_920a5856e42674526f77a5ee9046d08b);
+            tile_layer_867603d086cbc386a78537d980cd3b64.addTo(map_44b15f1f3d5662b244490cfa67d4ab6b);
         
     
-            var marker_e8c485077edf38b0fd69a0642cd30fb8 = L.marker(
+            var marker_a1e8307c0b165984ec764a2006c7e2b6 = L.marker(
                 [37.4812, 126.8815],
                 {
 }
-            ).addTo(map_920a5856e42674526f77a5ee9046d08b);
+            ).addTo(map_44b15f1f3d5662b244490cfa67d4ab6b);
         
     
-            var div_icon_17efa4d0dedf7860f1e7d49540da907d = L.divIcon({
-  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; font-weight:bold; border-radius:5px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.2);\"\u003e\ubc25\uc2ec\u003c/div\u003e",
+            var div_icon_70d2914c7969b927538f589faa791a44 = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px; white-space:nowrap;\"\u003e\ubc25\uc2ec\u003c/div\u003e",
   "className": "empty",
 });
         
     
-        var popup_2203c157c026d242707456fb65bff571 = L.popup({
-  "maxWidth": 320,
+        var popup_077911cde5feb18ffa680625f33e5956 = L.popup({
+  "maxWidth": 340,
+  "closeOnclick": false,
 });
 
         
             
-                var html_749ee0d609b0a42fc59f8c40cc3f6af2 = $(`<div id="html_749ee0d609b0a42fc59f8c40cc3f6af2" style="width: 100.0%; height: 100.0%;">     <div style="width:280px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px;">밥심</h3>         <p style="font-size:12px; color:#e74c3c; font-weight:bold;">도보 4분 (250m)</p>         <hr style="margin:5px 0;">         <div style='font-size:14px; text-align:center; color:#555;'>기본 식당 정보</div>     </div>     </div>`)[0];
-                popup_2203c157c026d242707456fb65bff571.setContent(html_749ee0d609b0a42fc59f8c40cc3f6af2);
+                var html_468892c5ed024a6388444803abfcaa85 = $(`<div id="html_468892c5ed024a6388444803abfcaa85" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px; cursor:pointer;" onclick="if(window.mapObj) { window.mapObj.closePopup(); }">         <h3 style="margin:8px 0; font-size:18px; color:#333;">밥심</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 4분 (250m)</p>         <hr style="margin:5px 0;">         <div style='font-size:14px; text-align:center; color:#555;'>기본 식당 정보</div>         <div style="font-size:11px; color:#888; margin-top:8px; font-style:italic;">(상자를 터치하면 닫힙니다)</div>     </div>     </div>`)[0];
+                popup_077911cde5feb18ffa680625f33e5956.setContent(html_468892c5ed024a6388444803abfcaa85);
             
         
 
-        marker_e8c485077edf38b0fd69a0642cd30fb8.bindPopup(popup_2203c157c026d242707456fb65bff571)
+        marker_a1e8307c0b165984ec764a2006c7e2b6.bindPopup(popup_077911cde5feb18ffa680625f33e5956)
         ;
 
         
     
     
-            marker_e8c485077edf38b0fd69a0642cd30fb8.bindTooltip(
+            marker_a1e8307c0b165984ec764a2006c7e2b6.bindTooltip(
                 `<div>
                      밥심
                  </div>`,
@@ -159,40 +165,41 @@ window.addEventListener('load', function() {
             );
         
     
-                marker_e8c485077edf38b0fd69a0642cd30fb8.setIcon(div_icon_17efa4d0dedf7860f1e7d49540da907d);
+                marker_a1e8307c0b165984ec764a2006c7e2b6.setIcon(div_icon_70d2914c7969b927538f589faa791a44);
             
     
-            var marker_e499ec050d7c6dab8538ed8ecea19986 = L.marker(
+            var marker_a996c50705498378cd75929bd66867d8 = L.marker(
                 [37.478, 126.885],
                 {
 }
-            ).addTo(map_920a5856e42674526f77a5ee9046d08b);
+            ).addTo(map_44b15f1f3d5662b244490cfa67d4ab6b);
         
     
-            var div_icon_6c85a1be1693136d7b1e1c3fb18247cf = L.divIcon({
-  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; font-weight:bold; border-radius:5px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.2);\"\u003e\ub7f0\uce58\ud22c\uac8c\ub354\u003c/div\u003e",
+            var div_icon_fe4b7657b3ac0826fede91ec973da1ae = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px; white-space:nowrap;\"\u003e\ub7f0\uce58\ud22c\uac8c\ub354\u003c/div\u003e",
   "className": "empty",
 });
         
     
-        var popup_ca302f04824ffd8cf54219234bb24fd2 = L.popup({
-  "maxWidth": 320,
+        var popup_14f74622e92a3d0b1b567c8d92a2b454 = L.popup({
+  "maxWidth": 340,
+  "closeOnclick": false,
 });
 
         
             
-                var html_609fbeeda45547cd73fb7dde63268445 = $(`<div id="html_609fbeeda45547cd73fb7dde63268445" style="width: 100.0%; height: 100.0%;">     <div style="width:280px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px;">런치투게더</h3>         <p style="font-size:12px; color:#e74c3c; font-weight:bold;">도보 5분 (320m)</p>         <hr style="margin:5px 0;">         <div style='font-size:14px; text-align:center; color:#555;'>기본 식당 정보</div>     </div>     </div>`)[0];
-                popup_ca302f04824ffd8cf54219234bb24fd2.setContent(html_609fbeeda45547cd73fb7dde63268445);
+                var html_5f2d760b347282566024da75a30459fd = $(`<div id="html_5f2d760b347282566024da75a30459fd" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px; cursor:pointer;" onclick="if(window.mapObj) { window.mapObj.closePopup(); }">         <h3 style="margin:8px 0; font-size:18px; color:#333;">런치투게더</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 5분 (320m)</p>         <hr style="margin:5px 0;">         <div style='font-size:14px; text-align:center; color:#555;'>기본 식당 정보</div>         <div style="font-size:11px; color:#888; margin-top:8px; font-style:italic;">(상자를 터치하면 닫힙니다)</div>     </div>     </div>`)[0];
+                popup_14f74622e92a3d0b1b567c8d92a2b454.setContent(html_5f2d760b347282566024da75a30459fd);
             
         
 
-        marker_e499ec050d7c6dab8538ed8ecea19986.bindPopup(popup_ca302f04824ffd8cf54219234bb24fd2)
+        marker_a996c50705498378cd75929bd66867d8.bindPopup(popup_14f74622e92a3d0b1b567c8d92a2b454)
         ;
 
         
     
     
-            marker_e499ec050d7c6dab8538ed8ecea19986.bindTooltip(
+            marker_a996c50705498378cd75929bd66867d8.bindTooltip(
                 `<div>
                      런치투게더
                  </div>`,
@@ -202,40 +209,41 @@ window.addEventListener('load', function() {
             );
         
     
-                marker_e499ec050d7c6dab8538ed8ecea19986.setIcon(div_icon_6c85a1be1693136d7b1e1c3fb18247cf);
+                marker_a996c50705498378cd75929bd66867d8.setIcon(div_icon_fe4b7657b3ac0826fede91ec973da1ae);
             
     
-            var marker_33b1186dc29045762cbff0e7d03b838c = L.marker(
+            var marker_23d0f17ce4183e5ad1bc2c0bec9db168 = L.marker(
                 [37.4785, 126.882],
                 {
 }
-            ).addTo(map_920a5856e42674526f77a5ee9046d08b);
+            ).addTo(map_44b15f1f3d5662b244490cfa67d4ab6b);
         
     
-            var div_icon_6432fa715ede4007116db71a6b936713 = L.divIcon({
-  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; font-weight:bold; border-radius:5px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.2);\"\u003e\ub7f0\uce58\ud0c0\uc784\u003c/div\u003e",
+            var div_icon_74091926ee9a297740ebeed52f8d141c = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px; white-space:nowrap;\"\u003e\ub7f0\uce58\ud0c0\uc784\u003c/div\u003e",
   "className": "empty",
 });
         
     
-        var popup_240ca114fec8c9f44969ae6294ff3fbe = L.popup({
-  "maxWidth": 320,
+        var popup_071d6f674b93297675b1f187f14de99e = L.popup({
+  "maxWidth": 340,
+  "closeOnclick": false,
 });
 
         
             
-                var html_cd04d59031f309f791a1e4e9dbbf37f5 = $(`<div id="html_cd04d59031f309f791a1e4e9dbbf37f5" style="width: 100.0%; height: 100.0%;">     <div style="width:280px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px;">런치타임</h3>         <p style="font-size:12px; color:#e74c3c; font-weight:bold;">도보 3분 (180m)</p>         <hr style="margin:5px 0;">          <div style='font-size:15px; line-height:1.6; color:#333; text-align:left; padding:12px; background-color:#f9f9f9; border-radius:10px; border-left: 5px solid #2ecc71;'>     <strong style="color:#27ae60;">📢 오늘의 메뉴 (런치타임)</strong><br>     <hr style="border:0; border-top:1px solid #ddd; margin:10px 0;">     테스트 메뉴입니다. </div>      </div>     </div>`)[0];
-                popup_240ca114fec8c9f44969ae6294ff3fbe.setContent(html_cd04d59031f309f791a1e4e9dbbf37f5);
+                var html_8c62667bd8331d1932b648e1cfb125cd = $(`<div id="html_8c62667bd8331d1932b648e1cfb125cd" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px; cursor:pointer;" onclick="if(window.mapObj) { window.mapObj.closePopup(); }">         <h3 style="margin:8px 0; font-size:18px; color:#333;">런치타임</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 3분 (180m)</p>         <hr style="margin:5px 0;">          <div style='font-size:15px; line-height:1.6; color:#333; text-align:left; padding:12px; background-color:#f9f9f9; border-radius:10px; border-left: 5px solid #2ecc71;'>     <strong style="color:#27ae60;">📢 오늘의 메뉴 (런치타임)</strong><br>     <hr style="border:0; border-top:1px solid #ddd; margin:10px 0;">     MacroDroid 알림 대기 중... </div>          <div style="font-size:11px; color:#888; margin-top:8px; font-style:italic;">(상자를 터치하면 닫힙니다)</div>     </div>     </div>`)[0];
+                popup_071d6f674b93297675b1f187f14de99e.setContent(html_8c62667bd8331d1932b648e1cfb125cd);
             
         
 
-        marker_33b1186dc29045762cbff0e7d03b838c.bindPopup(popup_240ca114fec8c9f44969ae6294ff3fbe)
+        marker_23d0f17ce4183e5ad1bc2c0bec9db168.bindPopup(popup_071d6f674b93297675b1f187f14de99e)
         ;
 
         
     
     
-            marker_33b1186dc29045762cbff0e7d03b838c.bindTooltip(
+            marker_23d0f17ce4183e5ad1bc2c0bec9db168.bindTooltip(
                 `<div>
                      런치타임
                  </div>`,
@@ -245,40 +253,41 @@ window.addEventListener('load', function() {
             );
         
     
-                marker_33b1186dc29045762cbff0e7d03b838c.setIcon(div_icon_6432fa715ede4007116db71a6b936713);
+                marker_23d0f17ce4183e5ad1bc2c0bec9db168.setIcon(div_icon_74091926ee9a297740ebeed52f8d141c);
             
     
-            var marker_ae15442bfe88b2b72c5605ea75b6343d = L.marker(
+            var marker_f3780f73de7bd5b6770fe45a9113efe5 = L.marker(
                 [37.4798, 126.8835],
                 {
 }
-            ).addTo(map_920a5856e42674526f77a5ee9046d08b);
+            ).addTo(map_44b15f1f3d5662b244490cfa67d4ab6b);
         
     
-            var div_icon_5752428f3f1fa458f085c6d8cda2d5ad = L.divIcon({
-  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; font-weight:bold; border-radius:5px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.2);\"\u003e\uc624\uc815\u003c/div\u003e",
+            var div_icon_a6795ae3941b79629ea909fe30e67473 = L.divIcon({
+  "html": "\u003cdiv style=\"background:#fff; border:2px solid #000; padding:5px 10px; border-radius:6px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:13px; white-space:nowrap;\"\u003e\uc624\uc815\u003c/div\u003e",
   "className": "empty",
 });
         
     
-        var popup_2eec115ea1aedabc13ee170b7175f0f7 = L.popup({
-  "maxWidth": 320,
+        var popup_1364035f101dcaa48946be6933bf8a51 = L.popup({
+  "maxWidth": 340,
+  "closeOnclick": false,
 });
 
         
             
-                var html_82235110d0f130573749662c8498dc3c = $(`<div id="html_82235110d0f130573749662c8498dc3c" style="width: 100.0%; height: 100.0%;">     <div style="width:280px; text-align:center; padding:5px;">         <h3 style="margin:8px 0; font-size:18px;">오정</h3>         <p style="font-size:12px; color:#e74c3c; font-weight:bold;">도보 3분 (200m)</p>         <hr style="margin:5px 0;">          <div style='font-size:14px; line-height:1.6; color:#333; text-align:center; padding:12px; background-color:#fff8f0; border-radius:10px; border-left: 5px solid #e67e22;'>     <strong style="color:#e67e22; font-size:16px;">🔥 오정 (온정찬)</strong><br>     <p style="margin:8px 0; color:#555; font-size:13px;">최신 메뉴를 바로 확인할 수 있습니다.</p>     <a href="https://pf.kakao.com/_UIdXn/posts" target="_blank" style="display:inline-block; margin-top:8px; background:#fee500; color:#3c1e1e; padding:10px 18px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">         👉 오정 최신 메뉴 보러가기     </a> </div>      </div>     </div>`)[0];
-                popup_2eec115ea1aedabc13ee170b7175f0f7.setContent(html_82235110d0f130573749662c8498dc3c);
+                var html_4c1b16dc7933d1aa79e8be2fa9d50038 = $(`<div id="html_4c1b16dc7933d1aa79e8be2fa9d50038" style="width: 100.0%; height: 100.0%;">     <div style="width:300px; text-align:center; padding:5px; cursor:pointer;" onclick="if(window.mapObj) { window.mapObj.closePopup(); }">         <h3 style="margin:8px 0; font-size:18px; color:#333;">오정</h3>         <p style="margin:0 0 10px 0; font-size:12px; color:#e74c3c; font-weight:bold;">🏢 회사에서 도보 3분 (200m)</p>         <hr style="margin:5px 0;">          <div style='font-size:14px; line-height:1.6; color:#333; text-align:center; padding:12px; background-color:#fff8f0; border-radius:10px; border-left: 5px solid #e67e22;'>     <strong style="color:#e67e22; font-size:16px;">🔥 오정 (온정찬)</strong><br>     <p style="margin:8px 0; color:#555; font-size:13px;">최신 메뉴를 바로 확인할 수 있습니다.</p>     <a href="https://pf.kakao.com/_UIdXn/posts" target="_blank" style="display:inline-block; margin-top:8px; background:#fee500; color:#3c1e1e; padding:10px 18px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">         👉 오정 최신 메뉴 보러가기     </a> </div>          <div style="font-size:11px; color:#888; margin-top:8px; font-style:italic;">(상자를 터치하면 닫힙니다)</div>     </div>     </div>`)[0];
+                popup_1364035f101dcaa48946be6933bf8a51.setContent(html_4c1b16dc7933d1aa79e8be2fa9d50038);
             
         
 
-        marker_ae15442bfe88b2b72c5605ea75b6343d.bindPopup(popup_2eec115ea1aedabc13ee170b7175f0f7)
+        marker_f3780f73de7bd5b6770fe45a9113efe5.bindPopup(popup_1364035f101dcaa48946be6933bf8a51)
         ;
 
         
     
     
-            marker_ae15442bfe88b2b72c5605ea75b6343d.bindTooltip(
+            marker_f3780f73de7bd5b6770fe45a9113efe5.bindTooltip(
                 `<div>
                      오정
                  </div>`,
@@ -288,10 +297,10 @@ window.addEventListener('load', function() {
             );
         
     
-                marker_ae15442bfe88b2b72c5605ea75b6343d.setIcon(div_icon_5752428f3f1fa458f085c6d8cda2d5ad);
+                marker_f3780f73de7bd5b6770fe45a9113efe5.setIcon(div_icon_a6795ae3941b79629ea909fe30e67473);
             
     
-            map_920a5856e42674526f77a5ee9046d08b.fitBounds(
+            map_44b15f1f3d5662b244490cfa67d4ab6b.fitBounds(
                 [[37.478, 126.8815], [37.4812, 126.885]],
                 {"padding": [50, 50]}
             );
