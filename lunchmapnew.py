@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (줌 고정형 대시보드 토글 & 지도 정위치)
+# 12. Selenium 종료 및 구글 지도 생성 (팝업 가로 나란히 정렬 & 지도 고정)
 # ==========================================================
 driver.quit()
 
@@ -502,22 +502,39 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(btn);
 
-                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (줌 레벨 고정 상태 유지)
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (지도는 고정하고 팝업을 가로로 예쁘게 배치)
                 var toggleBtn = document.createElement('div');
                 toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                 toggleBtn.className = 'toggle-all-btn';
                 toggleBtn.onclick = function() {
                     if (!mapObj) return;
                     if (!allPopupsOpen) {
+                        // 모든 팝업 열기
                         mapObj.eachLayer(function(layer) {
                             if (layer instanceof L.Marker && layer.getPopup()) {
                                 layer.openPopup();
                             }
                         });
-                        // 줌 레벨을 변경하지 않고 현재 화면 위치 고정
+                        
+                        // 지도는 고정된 상태에서, 팝업들을 화면 전체에 가로로 나란히 정렬
+                        setTimeout(function() {
+                            var popups = document.querySelectorAll('.leaflet-popup');
+                            if (popups.length > 0) {
+                                var screenWidth = window.innerWidth;
+                                var step = screenWidth / (popups.length + 1);
+                                popups.forEach(function(p, index) {
+                                    p.style.position = 'fixed';
+                                    p.style.top = '120px';
+                                    p.style.left = (step * (index + 1) - 160) + 'px';
+                                    p.style.transform = 'none';
+                                });
+                            }
+                        }, 50);
+
                         toggleBtn.innerHTML = '❌ 메뉴 닫기';
                         allPopupsOpen = true;
                     } else {
+                        // 모든 팝업 닫기
                         mapObj.eachLayer(function(layer) {
                             if (layer instanceof L.Marker && layer.getPopup()) {
                                 layer.closePopup();
@@ -532,7 +549,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(toggleBtn);
 
-                // 3. 개별 팝업이 닫힐 때 모든 팝업이 닫혔다면 위치 복귀
+                // 3. 개별 팝업이 닫힐 때 처리
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var anyOpen = false;
@@ -545,6 +562,14 @@ window.addEventListener('load', function() {
                             allPopupsOpen = false;
                             var toggleBtn = document.querySelector('.toggle-all-btn');
                             if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                            // 스타일 초기화
+                            var popups = document.querySelectorAll('.leaflet-popup');
+                            popups.forEach(function(p) {
+                                p.style.position = '';
+                                p.style.top = '';
+                                p.style.left = '';
+                                p.style.transform = '';
+                            });
                             if (initialCenter && initialZoom) {
                                 mapObj.setView(initialCenter, initialZoom);
                             }
@@ -569,6 +594,13 @@ document.addEventListener('keydown', function(e) {
             allPopupsOpen = false;
             var toggleBtn = document.querySelector('.toggle-all-btn');
             if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+            var popups = document.querySelectorAll('.leaflet-popup');
+            popups.forEach(function(p) {
+                p.style.position = '';
+                p.style.top = '';
+                p.style.left = '';
+                p.style.transform = '';
+            });
             if (initialCenter && initialZoom) {
                 mapObj.setView(initialCenter, initialZoom);
             }
@@ -639,6 +671,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 줌 고정형 대시보드 및 '지도 정위치' 적용 완료!")
+print("🎉 팝업 가로 나란히 정렬 & 지도 고정 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
