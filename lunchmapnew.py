@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (auto_pan=False 및 슬림 맞춤형 가로 정렬)
+# 12. Selenium 종료 및 구글 지도 생성 (개별 클릭 정상화 & 버튼 회피형 가로 정렬)
 # ==========================================================
 driver.quit()
 
@@ -496,39 +496,46 @@ window.addEventListener('load', function() {
                         var toggleBtn = document.querySelector('.toggle-all-btn');
                         if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                         if (initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom, {animate: false});
+                            mapObj.setView(initialCenter, initialZoom);
                         }
                     }
                 };
                 document.body.appendChild(btn);
 
-                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (화면 고정형 5개 슬림 가로 정렬)
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (지도 고정 + 우측 버튼 영역 회피형 가로 정렬)
                 var toggleBtn = document.createElement('div');
                 toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                 toggleBtn.className = 'toggle-all-btn';
                 toggleBtn.onclick = function() {
                     if (!mapObj) return;
                     if (!allPopupsOpen) {
-                        // 모든 팝업 열기 (지도 이동 없음)
+                        let curCenter = mapObj.getCenter();
+                        let curZoom = mapObj.getZoom();
+
+                        // 모든 팝업 열기
                         mapObj.eachLayer(function(layer) {
                             if (layer instanceof L.Marker && layer.getPopup()) {
                                 layer.openPopup();
                             }
                         });
                         
-                        // 5개 팝업을 화면 상단(top: 55px)에 바짝 붙이고, 겹치지 않게 가로 폭 자동 균등 배분
+                        // 지도를 원래 상태로 즉시 고정 (움직임 방지)
+                        mapObj.setView(curCenter, curZoom, {animate: false});
+                        
+                        // 5개 팝업을 상단에 바짝 붙이고, 우측 버튼 영역(200px)을 피해 슬림하게 가로 정렬
                         setTimeout(function() {
                             var popups = document.querySelectorAll('.leaflet-popup');
                             if (popups.length > 0) {
                                 var screenW = window.innerWidth;
-                                var margin = 10;
-                                var totalW = screenW - (margin * 2);
-                                var popupW = Math.floor((totalW - (8 * (popups.length - 1))) / popups.length);
-                                if (popupW < 220) popupW = 220; // 최소 너비 보장
+                                var maxRight = screenW - 210; // 우측 버튼 공간 확보
+                                var startLeft = 15;
+                                var availableW = maxRight - startLeft;
+                                var popupW = Math.floor((availableW - (6 * (popups.length - 1))) / popups.length);
+                                if (popupW < 220) popupW = 220;
 
                                 popups.forEach(function(p, index) {
                                     p.style.position = 'fixed';
-                                    p.style.top = '55px'; // 상단에 바짝 붙여서 세로 잘림 방지
+                                    p.style.top = '50px'; // 상단에 바짝 붙임
                                     
                                     var contentWrapper = p.querySelector('.leaflet-popup-content-wrapper');
                                     if (contentWrapper) {
@@ -540,7 +547,7 @@ window.addEventListener('load', function() {
                                         content.style.margin = '10px';
                                     }
                                     
-                                    var leftPos = margin + (index * (popupW + 8));
+                                    var leftPos = startLeft + (index * (popupW + 6));
                                     p.style.left = leftPos + 'px';
                                     p.style.transform = 'none';
                                 });
@@ -559,7 +566,7 @@ window.addEventListener('load', function() {
                         toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                         allPopupsOpen = false;
                         if (initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom, {animate: false});
+                            mapObj.setView(initialCenter, initialZoom);
                         }
                     }
                 };
@@ -579,7 +586,6 @@ window.addEventListener('load', function() {
                             var toggleBtn = document.querySelector('.toggle-all-btn');
                             if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                             
-                            // 스타일 초기화
                             var popups = document.querySelectorAll('.leaflet-popup');
                             popups.forEach(function(p) {
                                 p.style.position = '';
@@ -591,9 +597,6 @@ window.addEventListener('load', function() {
                                 var c = p.querySelector('.leaflet-popup-content');
                                 if (c) { c.style.width = ''; c.style.margin = ''; }
                             });
-                            if (initialCenter && initialZoom) {
-                                mapObj.setView(initialCenter, initialZoom, {animate: false});
-                            }
                         }
                     }, 150);
                 });
@@ -627,7 +630,7 @@ document.addEventListener('keydown', function(e) {
                 if (c) { c.style.width = ''; c.style.margin = ''; }
             });
             if (initialCenter && initialZoom) {
-                mapObj.setView(initialCenter, initialZoom, {animate: false});
+                mapObj.setView(initialCenter, initialZoom);
             }
         }
     }
@@ -674,8 +677,8 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
-        # auto_pan=False를 추가하여 팝업이 열릴 때 지도가 움직이는 현상을 원천 차단
-        popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False, auto_pan=False),
+        # 개별 클릭 시에는 평소처럼 정상적으로 팝업 위치로 이동하도록 설정 복구
+        popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False),
         tooltip=data["name"],
         icon=custom_icon
     ).add_to(menu_map)
@@ -697,6 +700,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 지도 고정 + 슬림 가로 정렬 완료!")
+print("🎉 개별 클릭 정상화 & 버튼 회피형 가로 정렬 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
