@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -33,14 +36,12 @@ jobs:
         run: |
           export DISPLAY=:99
           Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
-          python lunchmapnew.py
+          python lunchmapnew.py  # ★ 파일 이름에 맞게 수정됨
 
       - name: Commit and push generated html
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git reset --hard HEAD
-          git pull origin main --rebase
           git add gasan_lunch_map.html
           git commit -m "Auto-update lunch map for today" || exit 0
           git push
