@@ -252,7 +252,7 @@ def get_kakao_first_image(driver, url, store_name):
         return None
 
 # ==========================================================
-# 9. 스레드(Threads) - 런치타임 전용 크롤링
+# 9. 스레드(Threads) - 런치타임 전용 크롤링 (정교한 필터링 적용)
 # ==========================================================
 def get_threads_menu(driver, url):
     print(f"  -> [런치타임] 스레드 메뉴 수집 중 ({url})")
@@ -260,27 +260,38 @@ def get_threads_menu(driver, url):
         driver.get(url)
         time.sleep(4)
         
-        # 페이지 본문 텍스트 전체를 가져와서 불필요한 UI 요소를 제외하고 첫 번째 포스트 추출
         body_text = driver.find_element(By.TAG_NAME, "body").text
         lines = body_text.split("\n")
         
+        # 1. 프로필 상단 네비게이션 노이즈를 건너뛰기 위해 기준점('Reposts' 또는 '리포스트') 찾기
+        start_idx = 0
+        for i, line in enumerate(lines):
+            if line.strip() in ["Reposts", "리포스트", "Media", "미디어"]:
+                start_idx = i + 1
+        
+        # 기준점 이후의 텍스트만 남김
+        if start_idx > 0 and start_idx < len(lines):
+            lines = lines[start_idx:]
+            
         filtered_lines = []
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-            # 스레드 UI 관련 불필요한 키워드 필터링
-            if line in ["스레드", "답글", "미디어", "리포스트", "팔로우", "언급", "로그인", "가입하기", "lunchtime_ypp"]:
+            
+            # 2. 불필요한 UI 텍스트 및 시간 정보 제거
+            if line in ["스레드", "답글", "미디어", "리포스트", "팔로우", "언급", "로그인", "가입하기", "lunchtime_ypp", "Home", "Follow", "Mention", "Threads", "Replies", "Media", "Reposts"]:
                 continue
-            if "팔로워" in line or "시간 전" in line or "일 전" in line:
+            if "팔로워" in line or "followers" in line or "시간 전" in line or "일 전" in line or line.endswith("h") or line.endswith("d"):
                 continue
+                
             filtered_lines.append(line)
             
         if not filtered_lines:
             return "<div>메뉴 내용을 찾지 못했습니다.</div>"
             
-        # 첫 번째 게시물의 메뉴 텍스트 영역만 깔끔하게 구성 (상위 15줄 내외)
-        formatted_text = "<br>".join(filtered_lines[:15])
+        # 3. 실제 메뉴 항목들만 조합
+        formatted_text = "<br>".join(filtered_lines)
         return f'<div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:15px; line-height:1.7; color:#333;">{formatted_text}</div>'
     except Exception as e:
         print(f"  -> [런치타임] 스레드 오류 : {e}")
