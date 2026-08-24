@@ -39,18 +39,18 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴: 오늘 요일 영역만 크롭한 뒤 OCR 텍스트 추출
+# 3. 오정 메뉴: 요일별 열 크롭 후 텍스트 추출 (하단 안내문구 회피)
 # ==========================================================
 def ocr_ojeong_column_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        # 요일별 열을 정확히 잡기 위한 마진 설정
+        # 요일별 열 범위 및 메뉴가 있는 알맹이 구간만 정밀 타겟팅 (하단 안내문구 제외)
         left_margin = width * 0.14
         right_margin = width * 0.85
-        top_margin = height * 0.15
-        bottom_margin = height * 0.90
+        top_margin = height * 0.12    # 요일 헤더 포함
+        bottom_margin = height * 0.76  # 맨 아래 안내문구 전까지만 크롭
 
         table_width = right_margin - left_margin
         col_width = table_width / 5
@@ -58,10 +58,10 @@ def ocr_ojeong_column_by_weekday(image_path):
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
-        # 오늘 요일의 세로 열만 크롭
+        # 오늘 요일의 메뉴 알맹이 세로 열만 크롭
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        # 크롭된 요일 영역 이미지에 대해서만 OCR 수행
+        # OCR 수행
         text = pytesseract.image_to_string(cropped_img, lang='kor')
         lines = [line.strip().replace('\\', '') for line in text.split('\n') if line.strip()]
 
@@ -388,7 +388,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (요일별 열 크롭 + OCR 텍스트 + ESC/X표 정위치 복구)
+# 12. Selenium 종료 및 구글 지도 생성 (오정 정밀 OCR + ESC/X표 정위치 복구)
 # ==========================================================
 driver.quit()
 
@@ -566,6 +566,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 요일별 열 크롭 + OCR 텍스트 추출 & ESC/X표 정위치 복구 완료!")
+print("🎉 오정 정밀 OCR 텍스트 추출 & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
