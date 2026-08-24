@@ -39,14 +39,13 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴: 요일별 열 크롭 좌표 전면 수정 및 OCR 텍스트 추출
+# 3. 오정 메뉴: 요일별 크롭 + 3배 해상도 확대(Upscaling) + OCR 텍스트 추출
 # ==========================================================
 def ocr_ojeong_column_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        # [핵심 보정] 표 전체가 좌우 여백 없이 딱 맞도록 마진 재조정 (글자 잘림 방지)
         left_margin = width * 0.05
         right_margin = width * 0.95
         top_margin = height * 0.12
@@ -58,22 +57,27 @@ def ocr_ojeong_column_by_weekday(image_path):
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
-        # 오늘 요일의 세로 열을 온전하게 크롭
+        # 오늘 요일의 세로 열 크롭
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        # OCR 인식률을 높이기 위한 이미지 전처리 (흑백 + 대비 강화)
-        gray_img = cropped_img.convert('L')
+        # [핵심 개선] Tesseract 인식률을 극대화하기 위해 이미지를 3배로 확대 (LANCZOS 고화질 보간법 사용)
+        upscaled_img = cropped_img.resize((cropped_img.width * 3, cropped_img.height * 3), Image.LANCZOS)
+
+        # 이미지 전처리 (흑백 변환 + 대비 강화)
+        gray_img = upscaled_img.convert('L')
         enhancer = ImageEnhance.Contrast(gray_img)
         enhanced_img = enhancer.enhance(2.0)
         
         threshold = 160
         binary_img = enhanced_img.point(lambda p: 255 if p > threshold else 0)
 
-        # OCR 수행
-        custom_config = r'--oem 3 --psm 6'
+        # [핵심 개선] PSM 4 모드: 단일 열(Column) 형태의 텍스트 인식에 최적화된 설정
+        custom_config = r'--oem 3 --psm 4'
         text = pytesseract.image_to_string(binary_img, lang='kor', config=custom_config)
         
-        # 불필요한 테두리 및 특수문자 제거 후 유효한 메뉴 텍스트만 추출
+        print(f"  -> [오정 OCR 원본 텍스트]:\n{text}")
+
+        # 불필요한 기호나 한 글자 이하 노이즈 제거
         lines = []
         for line in text.split('\n'):
             clean_line = line.strip().replace('\\', '').replace('|', '').replace('.', '').strip()
@@ -91,7 +95,7 @@ def ocr_ojeong_column_by_weekday(image_path):
         '''
     except Exception as e:
         print(f"  -> [오정] OCR 크롭 오류 : {e}")
-        return "<div>오정 메뉴 인식 오류 발생</div>"
+        return f"<div>오정 메뉴 인식 오류: {e}</div>"
 
 # ==========================================================
 # 4. 식당 목록 (총 5곳)
@@ -403,7 +407,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (정밀 크롭 + OCR + ESC/X표 정위치 복구 완벽 통합)
+# 12. Selenium 종료 및 구글 지도 생성 (3배 업스케일 OCR + ESC/X표 정위치 복구 완벽 통합)
 # ==========================================================
 driver.quit()
 
@@ -581,6 +585,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 크롭 좌표 보정 OCR & ESC/X표 정위치 복구 완료!")
+print("🎉 오정 3배 업스케일 OCR & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
