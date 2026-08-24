@@ -6,7 +6,7 @@ from io import BytesIO
 from datetime import datetime
 
 import folium
-from PIL import Image
+from PIL import Image, ImageEnhance
 import pytesseract
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
@@ -39,17 +39,18 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴: 요일별 열 크롭 + 테두리 제거 + 이진화 OCR
+# 3. 오정 메뉴: 요일별 열 크롭 좌표 전면 수정 및 OCR 텍스트 추출
 # ==========================================================
 def ocr_ojeong_column_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        left_margin = width * 0.14
-        right_margin = width * 0.85
-        top_margin = height * 0.15
-        bottom_margin = height * 0.74
+        # [핵심 보정] 표 전체가 좌우 여백 없이 딱 맞도록 마진 재조정 (글자 잘림 방지)
+        left_margin = width * 0.05
+        right_margin = width * 0.95
+        top_margin = height * 0.12
+        bottom_margin = height * 0.76
 
         table_width = right_margin - left_margin
         col_width = table_width / 5
@@ -57,24 +58,22 @@ def ocr_ojeong_column_by_weekday(image_path):
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
-        # [개선 1] 표의 세로 테두리 선이 포함되지 않도록 안쪽으로 여백(Padding) 주기
-        padding_x = col_width * 0.08
-        crop_left += padding_x
-        crop_right -= padding_x
-
-        # 오늘 요일의 메뉴 알맹이 세로 열만 깔끔하게 크롭
+        # 오늘 요일의 세로 열을 온전하게 크롭
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        # [개선 2] 이진화(Thresholding) 전처리: 배경색을 완전히 지우고 글자만 선명하게 추출
+        # OCR 인식률을 높이기 위한 이미지 전처리 (흑백 + 대비 강화)
         gray_img = cropped_img.convert('L')
+        enhancer = ImageEnhance.Contrast(gray_img)
+        enhanced_img = enhancer.enhance(2.0)
+        
         threshold = 160
-        binary_img = gray_img.point(lambda p: 255 if p > threshold else 0)
+        binary_img = enhanced_img.point(lambda p: 255 if p > threshold else 0)
 
         # OCR 수행
         custom_config = r'--oem 3 --psm 6'
         text = pytesseract.image_to_string(binary_img, lang='kor', config=custom_config)
         
-        # 테두리 잔해 및 불필요한 특수문자 필터링
+        # 불필요한 테두리 및 특수문자 제거 후 유효한 메뉴 텍스트만 추출
         lines = []
         for line in text.split('\n'):
             clean_line = line.strip().replace('\\', '').replace('|', '').replace('.', '').strip()
@@ -404,7 +403,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (정밀 OCR 전처리 + ESC/X표 정위치 복구 완벽 통합)
+# 12. Selenium 종료 및 구글 지도 생성 (정밀 크롭 + OCR + ESC/X표 정위치 복구 완벽 통합)
 # ==========================================================
 driver.quit()
 
@@ -582,6 +581,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 정밀 OCR 전처리 & ESC/X표 정위치 복구 완료!")
+print("🎉 오정 크롭 좌표 보정 OCR & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
