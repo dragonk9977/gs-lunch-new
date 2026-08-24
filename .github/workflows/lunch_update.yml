@@ -22,21 +22,27 @@ jobs:
         with:
           python-version: '3.10'
 
+      # 1. 오정 OCR 인식을 위한 시스템 프로그램(Tesseract) 설치
+      - name: Install Tesseract OCR
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-kor
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytesseract  # 파이썬 OCR 라이브러리 추가 설치
 
       - name: Set up Virtual Display (Xvfb)
         run: |
-          sudo apt-get update
           sudo apt-get install -y xvfb
 
       - name: Run lunch script with Virtual Display
         run: |
           export DISPLAY=:99
           Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
-          python lunchmapnew.py  # ★ 파일 이름에 맞게 수정됨
+          python lunchmapnew.py
 
       - name: Commit and push generated html
         run: |
