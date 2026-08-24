@@ -7,6 +7,7 @@ from datetime import datetime
 
 import folium
 from PIL import Image
+import pytesseract
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
@@ -38,14 +39,14 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 요일별 이미지 크롭 함수 (잘림 방지를 위해 범위 확장)
+# 3. 오정 메뉴: 오늘 요일 영역만 크롭한 뒤 OCR 텍스트 추출
 # ==========================================================
-def crop_ojeong_by_weekday(image_path):
+def ocr_ojeong_column_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        # 양옆과 위아래 범위를 조금 더 넉넉하게 잡아 글자가 잘리지 않도록 조정
+        # 요일별 열을 정확히 잡기 위한 마진 설정
         left_margin = width * 0.14
         right_margin = width * 0.85
         top_margin = height * 0.15
@@ -57,23 +58,25 @@ def crop_ojeong_by_weekday(image_path):
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
+        # 오늘 요일의 세로 열만 크롭
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        max_height = 700
-        if cropped_img.height > max_height:
-            ratio = max_height / cropped_img.height
-            new_width = int(cropped_img.width * ratio)
-            cropped_img = cropped_img.resize((new_width, max_height), Image.LANCZOS)
+        # 크롭된 요일 영역 이미지에 대해서만 OCR 수행
+        text = pytesseract.image_to_string(cropped_img, lang='kor')
+        lines = [line.strip().replace('\\', '') for line in text.split('\n') if line.strip()]
 
-        buffered = BytesIO()
-        cropped_img.save(buffered, format="JPEG", quality=95)
-        encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        if not lines:
+            return "<div>오정 오늘의 메뉴를 인식하지 못했습니다.</div>"
 
-        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 이미지 크롭 완료")
-        return "data:image/jpeg;base64," + encoded_string
+        formatted_text = "<br>".join(lines)
+        return f'''
+        <div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:14px; line-height:1.6; color:#333; max-height:350px; overflow-y:auto;">
+            {formatted_text}
+        </div>
+        '''
     except Exception as e:
-        print(f"  -> [오정] Crop 실패 : {e}")
-        return None
+        print(f"  -> [오정] OCR 크롭 오류 : {e}")
+        return "<div>오정 메뉴 인식 오류 발생</div>"
 
 # ==========================================================
 # 4. 식당 목록 (총 5곳)
@@ -82,7 +85,7 @@ cafeteria_list = [
     {
         "name": "오정",
         "address": "서울 금천구 가산디지털2로 30",
-        "type": "ojeong",
+        "type": "ojeong_ocr",
         "url": OJEONG_IMAGE_PATH
     },
     {
@@ -363,9 +366,8 @@ for item in cafeteria_list:
     dist, walk_min = calculate_walking_info((lat, lng))
     html_content = ""
 
-    if item["type"] == "ojeong":
-        src = crop_ojeong_by_weekday(item["url"])
-        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
+    if item["type"] == "ojeong_ocr":
+        html_content = ocr_ojeong_column_by_weekday(item["url"])
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -386,7 +388,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (오정 이미지 크롭 복구 + ESC/X표 정위치 복구 완벽 통합)
+# 12. Selenium 종료 및 구글 지도 생성 (요일별 열 크롭 + OCR 텍스트 + ESC/X표 정위치 복구)
 # ==========================================================
 driver.quit()
 
@@ -564,6 +566,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 요일별 이미지 크롭 복구 & ESC/X표 정위치 복구 완료!")
+print("🎉 요일별 열 크롭 + OCR 텍스트 추출 & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
