@@ -39,62 +39,98 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴: 요일별 크롭 + 3배 해상도 확대(Upscaling) + OCR 텍스트 추출
+# 3. 오정 메뉴: 스마트 동적 좌표 인식 OCR (프레임 변화 무관)
 # ==========================================================
-def ocr_ojeong_column_by_weekday(image_path):
+def ocr_ojeong_dynamic_columns(image_path):
     try:
         img = Image.open(image_path)
-        width, height = img.size
-
-        left_margin = width * 0.05
-        right_margin = width * 0.95
-        top_margin = height * 0.12
-        bottom_margin = height * 0.76
-
-        table_width = right_margin - left_margin
-        col_width = table_width / 5
-
-        crop_left = left_margin + (col_width * ojeong_weekday_index)
-        crop_right = crop_left + col_width
-
-        # 오늘 요일의 세로 열 크롭
-        cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
-
-        # [핵심 개선] Tesseract 인식률을 극대화하기 위해 이미지를 3배로 확대 (LANCZOS 고화질 보간법 사용)
-        upscaled_img = cropped_img.resize((cropped_img.width * 3, cropped_img.height * 3), Image.LANCZOS)
-
-        # 이미지 전처리 (흑백 변환 + 대비 강화)
-        gray_img = upscaled_img.convert('L')
-        enhancer = ImageEnhance.Contrast(gray_img)
-        enhanced_img = enhancer.enhance(2.0)
         
-        threshold = 160
-        binary_img = enhanced_img.point(lambda p: 255 if p > threshold else 0)
-
-        # [핵심 개선] PSM 4 모드: 단일 열(Column) 형태의 텍스트 인식에 최적화된 설정
-        custom_config = r'--oem 3 --psm 4'
-        text = pytesseract.image_to_string(binary_img, lang='kor', config=custom_config)
+        # 해상도 2배 확대 및 대비 강화
+        upscaled = img.resize((img.width * 2, img.height * 2), Image.LANCZOS)
+        gray = upscaled.convert('L')
+        enhancer = ImageEnhance.Contrast(gray)
+        enhanced = enhancer.enhance(2.0)
         
-        print(f"  -> [오정 OCR 원본 텍스트]:\n{text}")
-
-        # 불필요한 기호나 한 글자 이하 노이즈 제거
-        lines = []
-        for line in text.split('\n'):
-            clean_line = line.strip().replace('\\', '').replace('|', '').replace('.', '').strip()
-            if len(clean_line) > 1:
-                lines.append(clean_line)
-
-        if not lines:
+        # 이미지 전체에서 단어별 좌표(데이터) 추출
+        data = pytesseract.image_to_data(enhanced, lang='kor', output_type=pytesseract.Output.DICT)
+        
+        words = []
+        n_boxes = len(data['text'])
+        for i in range(n_boxes):
+            text = data['text'][i].strip()
+            if text and len(text) > 0 and data['conf'][i] > 0:
+                words.append({
+                    'text': text,
+                    'left': data['left'][i],
+                    'top': data['top'][i],
+                    'width': data['width'][i],
+                    'height': data['height'][i]
+                })
+        
+        if not words:
             return "<div>오정 오늘의 메뉴를 인식하지 못했습니다.</div>"
-
-        formatted_text = "<br>".join(lines)
+            
+        # 실제 감지된 텍스트들의 좌우 전체 폭을 기준으로 테이블 영역 자동 계산
+        lefts = [w['left'] for w in words]
+        rights = [w['left'] + w['width'] for w in words]
+        table_min_x = min(lefts)
+        table_max_x = max(rights)
+        table_width = table_max_x - table_min_x
+        
+        col_width = table_width / 5.0
+        
+        # 오늘 요일(월~금)에 해당하는 X 좌표 구간 설정
+        col_start = table_min_x + (col_width * ojeong_weekday_index)
+        col_end = col_start + col_width
+        
+        # 인접 요일 글자가 섞이지 않도록 안쪽 여백(15%) 적용
+        margin = col_width * 0.15
+        target_start = col_start + margin
+        target_end = col_end - margin
+        
+        # 오늘 요일 열에 포함된 단어들만 필터링
+        col_words = [w for w in words if target_start <= (w['left'] + w['width']/2) <= target_end]
+        
+        # 상단 날짜/요일 헤더 및 하단 안내문구 필터링 후 세로(Y축) 순서대로 정렬
+        col_words.sort(key=lambda w: w['top'])
+        
+        lines = []
+        current_line = []
+        last_top = -999
+        
+        for w in col_words:
+            t = w['text']
+            # 불필요한 메타 문구 및 날짜 헤더 제외
+            if any(kw in t for kw in ['변동', '원', '영업', '시간', '원산지', '쌀', '배추', '소고기', '조인', 'T:', '일자']):
+                continue
+            if any(day_str in t for day_str in ['월', '화', '수', '목', '금', '8월', '9월', '10월', '11월', '12월', '1월', '2월', '3월', '4월', '5월', '6월', '7월']):
+                if w['top'] < enhanced.height * 0.3:
+                    continue
+                    
+            # 비슷한 세로 위치(18픽셀 이내)의 단어들은 한 줄로 묶기
+            if abs(w['top'] - last_top) < 18:
+                current_line.append(t)
+            else:
+                if current_line:
+                    lines.append(" ".join(current_line))
+                current_line = [t]
+                last_top = w['top']
+        if current_line:
+            lines.append(" ".join(current_line))
+            
+        cleaned_lines = [l.replace('|', '').replace('.', '').strip() for l in lines if len(l.strip()) > 1]
+        
+        if not cleaned_lines:
+            return "<div>오정 오늘의 메뉴를 인식하지 못했습니다.</div>"
+            
+        formatted_text = "<br>".join(cleaned_lines)
         return f'''
         <div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:14px; line-height:1.6; color:#333; max-height:350px; overflow-y:auto;">
             {formatted_text}
         </div>
         '''
     except Exception as e:
-        print(f"  -> [오정] OCR 크롭 오류 : {e}")
+        print(f"  -> [오정] OCR 동적 분석 오류 : {e}")
         return f"<div>오정 메뉴 인식 오류: {e}</div>"
 
 # ==========================================================
@@ -386,7 +422,7 @@ for item in cafeteria_list:
     html_content = ""
 
     if item["type"] == "ojeong_ocr":
-        html_content = ocr_ojeong_column_by_weekday(item["url"])
+        html_content = ocr_ojeong_dynamic_columns(item["url"])
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -407,7 +443,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (3배 업스케일 OCR + ESC/X표 정위치 복구 완벽 통합)
+# 12. Selenium 종료 및 구글 지도 생성 (스마트 OCR + ESC/X표 정위치 복구 완벽 통합)
 # ==========================================================
 driver.quit()
 
@@ -585,6 +621,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 3배 업스케일 OCR & ESC/X표 정위치 복구 완료!")
+print("🎉 스마트 동적 좌표 OCR & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
