@@ -6,8 +6,7 @@ from io import BytesIO
 from datetime import datetime
 
 import folium
-from PIL import Image, ImageEnhance
-import pytesseract
+from PIL import Image
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
@@ -39,99 +38,43 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴: 스마트 동적 좌표 인식 OCR (프레임 변화 무관)
+# 3. 오정 메뉴: 요일별 세로 열 완벽 크롭 함수
 # ==========================================================
-def ocr_ojeong_dynamic_columns(image_path):
+def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
-        
-        # 해상도 2배 확대 및 대비 강화
-        upscaled = img.resize((img.width * 2, img.height * 2), Image.LANCZOS)
-        gray = upscaled.convert('L')
-        enhancer = ImageEnhance.Contrast(gray)
-        enhanced = enhancer.enhance(2.0)
-        
-        # 이미지 전체에서 단어별 좌표(데이터) 추출
-        data = pytesseract.image_to_data(enhanced, lang='kor', output_type=pytesseract.Output.DICT)
-        
-        words = []
-        n_boxes = len(data['text'])
-        for i in range(n_boxes):
-            text = data['text'][i].strip()
-            if text and len(text) > 0 and data['conf'][i] > 0:
-                words.append({
-                    'text': text,
-                    'left': data['left'][i],
-                    'top': data['top'][i],
-                    'width': data['width'][i],
-                    'height': data['height'][i]
-                })
-        
-        if not words:
-            return "<div>오정 오늘의 메뉴를 인식하지 못했습니다.</div>"
-            
-        # 실제 감지된 텍스트들의 좌우 전체 폭을 기준으로 테이블 영역 자동 계산
-        lefts = [w['left'] for w in words]
-        rights = [w['left'] + w['width'] for w in words]
-        table_min_x = min(lefts)
-        table_max_x = max(rights)
-        table_width = table_max_x - table_min_x
-        
-        col_width = table_width / 5.0
-        
-        # 오늘 요일(월~금)에 해당하는 X 좌표 구간 설정
-        col_start = table_min_x + (col_width * ojeong_weekday_index)
-        col_end = col_start + col_width
-        
-        # 인접 요일 글자가 섞이지 않도록 안쪽 여백(15%) 적용
-        margin = col_width * 0.15
-        target_start = col_start + margin
-        target_end = col_end - margin
-        
-        # 오늘 요일 열에 포함된 단어들만 필터링
-        col_words = [w for w in words if target_start <= (w['left'] + w['width']/2) <= target_end]
-        
-        # 상단 날짜/요일 헤더 및 하단 안내문구 필터링 후 세로(Y축) 순서대로 정렬
-        col_words.sort(key=lambda w: w['top'])
-        
-        lines = []
-        current_line = []
-        last_top = -999
-        
-        for w in col_words:
-            t = w['text']
-            # 불필요한 메타 문구 및 날짜 헤더 제외
-            if any(kw in t for kw in ['변동', '원', '영업', '시간', '원산지', '쌀', '배추', '소고기', '조인', 'T:', '일자']):
-                continue
-            if any(day_str in t for day_str in ['월', '화', '수', '목', '금', '8월', '9월', '10월', '11월', '12월', '1월', '2월', '3월', '4월', '5월', '6월', '7월']):
-                if w['top'] < enhanced.height * 0.3:
-                    continue
-                    
-            # 비슷한 세로 위치(18픽셀 이내)의 단어들은 한 줄로 묶기
-            if abs(w['top'] - last_top) < 18:
-                current_line.append(t)
-            else:
-                if current_line:
-                    lines.append(" ".join(current_line))
-                current_line = [t]
-                last_top = w['top']
-        if current_line:
-            lines.append(" ".join(current_line))
-            
-        cleaned_lines = [l.replace('|', '').replace('.', '').strip() for l in lines if len(l.strip()) > 1]
-        
-        if not cleaned_lines:
-            return "<div>오정 오늘의 메뉴를 인식하지 못했습니다.</div>"
-            
-        formatted_text = "<br>".join(cleaned_lines)
-        return f'''
-        <div style="background-color:#f9f9f9; border:1px solid #ddd; padding:15px; border-radius:8px; text-align:left; font-size:14px; line-height:1.6; color:#333; max-height:350px; overflow-y:auto;">
-            {formatted_text}
-        </div>
-        '''
+        width, height = img.size
+
+        # [정밀 보정] 표 전체가 좌우 여백 없이 딱 맞도록 마진 재조정
+        left_margin = width * 0.03
+        right_margin = width * 0.97
+        top_margin = height * 0.12
+        bottom_margin = height * 0.93
+
+        table_width = right_margin - left_margin
+        col_width = table_width / 5
+
+        crop_left = left_margin + (col_width * ojeong_weekday_index)
+        crop_right = crop_left + col_width
+
+        # 오늘 요일의 세로 열을 날짜부터 맨 아래까지 온전하게 크롭
+        cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
+
+        max_height = 700
+        if cropped_img.height > max_height:
+            ratio = max_height / cropped_img.height
+            new_width = int(cropped_img.width * ratio)
+            cropped_img = cropped_img.resize((new_width, max_height), Image.LANCZOS)
+
+        buffered = BytesIO()
+        cropped_img.save(buffered, format="JPEG", quality=95)
+        encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 이미지 크롭 완료")
+        return "data:image/jpeg;base64," + encoded_string
     except Exception as e:
-        print(f"  -> [오정] OCR 동적 분석 오류 : {e}")
-        return f"<div>오정 메뉴 인식 오류: {e}</div>"
+        print(f"  -> [오정] Crop 실패 : {e}")
+        return None
 
 # ==========================================================
 # 4. 식당 목록 (총 5곳)
@@ -140,7 +83,7 @@ cafeteria_list = [
     {
         "name": "오정",
         "address": "서울 금천구 가산디지털2로 30",
-        "type": "ojeong_ocr",
+        "type": "ojeong",
         "url": OJEONG_IMAGE_PATH
     },
     {
@@ -421,8 +364,9 @@ for item in cafeteria_list:
     dist, walk_min = calculate_walking_info((lat, lng))
     html_content = ""
 
-    if item["type"] == "ojeong_ocr":
-        html_content = ocr_ojeong_dynamic_columns(item["url"])
+    if item["type"] == "ojeong":
+        src = crop_ojeong_by_weekday(item["url"])
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -443,7 +387,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (스마트 OCR + ESC/X표 정위치 복구 완벽 통합)
+# 12. Selenium 종료 및 구글 지도 생성 (열 크롭 + ESC/X표 정위치 복구 완벽 통합)
 # ==========================================================
 driver.quit()
 
@@ -621,6 +565,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 스마트 동적 좌표 OCR & ESC/X표 정위치 복구 완료!")
+print("🎉 오정 요일별 세로 열 크롭 복구 & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
