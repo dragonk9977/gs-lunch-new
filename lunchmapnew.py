@@ -38,14 +38,14 @@ today_date_str_nospace = f"{today.month}월{today.day}일"
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 OCR 텍스트 추출 함수 (프레임 변화에 구애받지 않음)
+# 3. 오정 메뉴 OCR 텍스트 추출 함수 (백슬래시 에러 방지 처리 추가)
 # ==========================================================
 def ocr_ojeong_menu(image_path):
     try:
         img = Image.open(image_path)
-        # 한국어+영어 OCR 수행
         text = pytesseract.image_to_string(img, lang='kor')
-        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        # 백슬래시 등 자바스크립트 충돌을 일으키는 특수문자 제거
+        lines = [line.strip().replace('\\', '') for line in text.split('\n') if line.strip()]
         
         if not lines:
             return "<div>오정 메뉴 텍스트를 인식하지 못했습니다.</div>"
@@ -307,7 +307,7 @@ def get_threads_menu(driver, url):
         
         filtered_lines = []
         for line in lines[start_idx:]:
-            line = line.strip()
+            line = line.strip().replace('\\', '')
             if not line:
                 continue
             if "월" in line and "일" in line and target_date1 not in line and target_date2 not in line:
@@ -370,7 +370,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (오정 OCR + 팝업 X표 닫을 시 정위치 확실한 복구)
+# 12. Selenium 종료 및 구글 지도 생성 (에러 방지 처리 적용 완료)
 # ==========================================================
 driver.quit()
 
@@ -463,7 +463,6 @@ window.addEventListener('load', function() {
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var openPopups = document.querySelectorAll('.leaflet-popup');
-                        // 열려 있는 팝업이 완전히 0개일 때만 정위치로 복구 (다른 마커로 이동할 때는 튀지 않음)
                         if (openPopups.length === 0 && initialCenter && initialZoom) {
                             mapObj.setView(initialCenter, initialZoom);
                         }
@@ -538,6 +537,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 OCR 적용 & 팝업 닫기 정위치 복구 완료!")
+print("🎉 OCR 백슬래시 에러 수정 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
