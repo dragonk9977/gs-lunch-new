@@ -7,7 +7,6 @@ from datetime import datetime
 
 import folium
 from PIL import Image
-import pytesseract
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
@@ -39,17 +38,18 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴: 오늘 요일 영역만 크롭한 뒤 OCR 텍스트 추출
+# 3. 오정 메뉴 요일별 이미지 크롭 함수 (잘림 방지를 위해 범위 확장)
 # ==========================================================
-def ocr_ojeong_by_weekday(image_path):
+def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        left_margin = width * 0.16
-        right_margin = width * 0.83
-        top_margin = height * 0.18
-        bottom_margin = height * 0.88
+        # 양옆과 위아래 범위를 조금 더 넉넉하게 잡아 글자가 잘리지 않도록 조정
+        left_margin = width * 0.14
+        right_margin = width * 0.85
+        top_margin = height * 0.15
+        bottom_margin = height * 0.90
 
         table_width = right_margin - left_margin
         col_width = table_width / 5
@@ -57,25 +57,23 @@ def ocr_ojeong_by_weekday(image_path):
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
-        # 오늘 요일의 세로 열만 깔끔하게 크롭
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        # 크롭된 요일 영역 이미지로 OCR 수행
-        text = pytesseract.image_to_string(cropped_img, lang='kor')
-        lines = [line.strip().replace('\\', '') for line in text.split('\n') if line.strip()]
+        max_height = 700
+        if cropped_img.height > max_height:
+            ratio = max_height / cropped_img.height
+            new_width = int(cropped_img.width * ratio)
+            cropped_img = cropped_img.resize((new_width, max_height), Image.LANCZOS)
 
-        if not lines:
-            return "<div>오정 오늘의 메뉴를 인식하지 못했습니다.</div>"
+        buffered = BytesIO()
+        cropped_img.save(buffered, format="JPEG", quality=95)
+        encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        formatted_text = "<br>".join(lines)
-        return f'''
-        <div style="background-color:#f9f9f9; border:1px solid #ddd; padding:12px; border-radius:8px; text-align:left; font-size:14px; line-height:1.6; color:#333; max-height:350px; overflow-y:auto;">
-            {formatted_text}
-        </div>
-        '''
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 이미지 크롭 완료")
+        return "data:image/jpeg;base64," + encoded_string
     except Exception as e:
-        print(f"  -> [오정] OCR 크롭 오류 : {e}")
-        return "<div>오정 메뉴 인식 오류 발생</div>"
+        print(f"  -> [오정] Crop 실패 : {e}")
+        return None
 
 # ==========================================================
 # 4. 식당 목록 (총 5곳)
@@ -84,7 +82,7 @@ cafeteria_list = [
     {
         "name": "오정",
         "address": "서울 금천구 가산디지털2로 30",
-        "type": "ojeong_ocr",
+        "type": "ojeong",
         "url": OJEONG_IMAGE_PATH
     },
     {
@@ -365,8 +363,9 @@ for item in cafeteria_list:
     dist, walk_min = calculate_walking_info((lat, lng))
     html_content = ""
 
-    if item["type"] == "ojeong_ocr":
-        html_content = ocr_ojeong_by_weekday(item["url"])
+    if item["type"] == "ojeong":
+        src = crop_ojeong_by_weekday(item["url"])
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -387,7 +386,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (크롭 후 OCR + ESC/X표 정위치 복구 완벽 통합)
+# 12. Selenium 종료 및 구글 지도 생성 (오정 이미지 크롭 복구 + ESC/X표 정위치 복구 완벽 통합)
 # ==========================================================
 driver.quit()
 
@@ -565,6 +564,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 요일별 크롭+OCR & ESC/X표 정위치 복구 완료!")
+print("🎉 오정 요일별 이미지 크롭 복구 & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
