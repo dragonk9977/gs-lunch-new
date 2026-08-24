@@ -7,7 +7,6 @@ from datetime import datetime
 
 import folium
 from PIL import Image
-import pytesseract
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
@@ -34,31 +33,46 @@ today_weekday_index = today.weekday()
 today_weekday = weekdays[today_weekday_index]
 today_date_str_space = f"{today.month}월 {today.day}일"
 today_date_str_nospace = f"{today.month}월{today.day}일"
+ojeong_weekday_index = min(today_weekday_index, 4)
 
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 OCR 텍스트 추출 함수 (백슬래시 에러 방지 처리 추가)
+# 3. 오정 메뉴 요일별 이미지 크롭 함수 (빨간색 상자 영역 추출)
 # ==========================================================
-def ocr_ojeong_menu(image_path):
+def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
-        text = pytesseract.image_to_string(img, lang='kor')
-        # 백슬래시 등 자바스크립트 충돌을 일으키는 특수문자 제거
-        lines = [line.strip().replace('\\', '') for line in text.split('\n') if line.strip()]
-        
-        if not lines:
-            return "<div>오정 메뉴 텍스트를 인식하지 못했습니다.</div>"
-            
-        formatted_text = "<br>".join(lines)
-        return f'''
-        <div style="background-color:#f9f9f9; border:1px solid #ddd; padding:12px; border-radius:8px; text-align:left; font-size:14px; line-height:1.6; color:#333; max-height:350px; overflow-y:auto;">
-            {formatted_text}
-        </div>
-        '''
+        width, height = img.size
+
+        left_margin = width * 0.16
+        right_margin = width * 0.83
+        top_margin = height * 0.18
+        bottom_margin = height * 0.88
+
+        table_width = right_margin - left_margin
+        col_width = table_width / 5
+
+        crop_left = left_margin + (col_width * ojeong_weekday_index)
+        crop_right = crop_left + col_width
+
+        cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
+
+        max_height = 700
+        if cropped_img.height > max_height:
+            ratio = max_height / cropped_img.height
+            new_width = int(cropped_img.width * ratio)
+            cropped_img = cropped_img.resize((new_width, max_height), Image.LANCZOS)
+
+        buffered = BytesIO()
+        cropped_img.save(buffered, format="JPEG", quality=95)
+        encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료")
+        return "data:image/jpeg;base64," + encoded_string
     except Exception as e:
-        print(f"  -> [오정] OCR 오류 : {e}")
-        return "<div>오정 메뉴 인식 오류 발생</div>"
+        print(f"  -> [오정] Crop 실패 : {e}")
+        return None
 
 # ==========================================================
 # 4. 식당 목록 (총 5곳)
@@ -67,7 +81,7 @@ cafeteria_list = [
     {
         "name": "오정",
         "address": "서울 금천구 가산디지털2로 30",
-        "type": "ojeong_ocr",
+        "type": "ojeong",
         "url": OJEONG_IMAGE_PATH
     },
     {
@@ -348,8 +362,9 @@ for item in cafeteria_list:
     dist, walk_min = calculate_walking_info((lat, lng))
     html_content = ""
 
-    if item["type"] == "ojeong_ocr":
-        html_content = ocr_ojeong_menu(item["url"])
+    if item["type"] == "ojeong":
+        src = crop_ojeong_by_weekday(item["url"])
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -370,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (에러 방지 처리 적용 완료)
+# 12. Selenium 종료 및 구글 지도 생성 (오정 이미지 크롭 복구 + ESC/X표 정위치 복구)
 # ==========================================================
 driver.quit()
 
@@ -438,6 +453,13 @@ let initialCenter = null;
 let initialZoom = null;
 let mapObj = null;
 
+function resetMapView() {
+    if (mapObj && initialCenter && initialZoom) {
+        mapObj.closePopup();
+        mapObj.setView(initialCenter, initialZoom);
+    }
+}
+
 window.addEventListener('load', function() {
     setTimeout(function() {
         for (var key in window) {
@@ -452,10 +474,7 @@ window.addEventListener('load', function() {
                 btn.innerHTML = '🗺️ 지도 정위치';
                 btn.className = 'reset-map-btn';
                 btn.onclick = function() {
-                    if (mapObj && initialCenter && initialZoom) {
-                        mapObj.closePopup();
-                        mapObj.setView(initialCenter, initialZoom);
-                    }
+                    resetMapView();
                 };
                 document.body.appendChild(btn);
 
@@ -463,8 +482,8 @@ window.addEventListener('load', function() {
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var openPopups = document.querySelectorAll('.leaflet-popup');
-                        if (openPopups.length === 0 && initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom);
+                        if (openPopups.length === 0) {
+                            resetMapView();
                         }
                     }, 200);
                 });
@@ -473,6 +492,13 @@ window.addEventListener('load', function() {
             }
         }
     }, 400);
+});
+
+// 3. ESC 키를 눌렀을 때도 메뉴가 닫히면서 지도 정위치로 복구
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        resetMapView();
+    }
 });
 </script>
 """
@@ -537,6 +563,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 OCR 백슬래시 에러 수정 완료!")
+print("🎉 오정 이미지 크롭 복구 & ESC/X표 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
