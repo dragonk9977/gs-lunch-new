@@ -38,17 +38,17 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 요일별 이미지 크롭 함수
+# 3. 오정 메뉴 (요일별 Crop)
 # ==========================================================
 def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        left_margin = width * 0.03
-        right_margin = width * 0.97
-        top_margin = height * 0.12
-        bottom_margin = height * 0.93
+        left_margin = width * 0.16
+        right_margin = width * 0.83
+        top_margin = height * 0.18
+        bottom_margin = height * 0.88
 
         table_width = right_margin - left_margin
         col_width = table_width / 5
@@ -68,7 +68,7 @@ def crop_ojeong_by_weekday(image_path):
         cropped_img.save(buffered, format="JPEG", quality=95)
         encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 이미지 크롭 완료")
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료")
         return "data:image/jpeg;base64," + encoded_string
     except Exception as e:
         print(f"  -> [오정] Crop 실패 : {e}")
@@ -321,7 +321,7 @@ def get_threads_menu(driver, url):
         
         filtered_lines = []
         for line in lines[start_idx:]:
-            line = line.strip().replace('\\', '')
+            line = line.strip()
             if not line:
                 continue
             if "월" in line and "일" in line and target_date1 not in line and target_date2 not in line:
@@ -364,7 +364,7 @@ for item in cafeteria_list:
 
     if item["type"] == "ojeong":
         src = crop_ojeong_by_weekday(item["url"])
-        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (에러 없는 일반 문자열 교체 방식 적용)
+# 12. Selenium 종료 및 구글 지도 생성
 # ==========================================================
 driver.quit()
 
@@ -400,22 +400,6 @@ menu_map = folium.Map(
     tiles='https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
     attr='Google'
 )
-
-# 전체 메뉴 모아보기 HTML 내용 생성
-all_menus_inner_html = ""
-for data in scraped_data:
-    all_menus_inner_html += f"""
-    <div style="background:#ffffff; border:2px solid #e0e0e0; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.06); text-align:center;">
-        <h3 style="margin:5px 0; font-size:20px; color:#333;">{data['name']}</h3>
-        <p style="margin:0 0 10px 0; font-size:13px; color:#e74c3c; font-weight:bold;">
-            🏢 회사에서 도보 약 {data['walk_min']}분 ({data['dist']}m)
-        </p>
-        <hr style="margin:8px 0 12px 0; border:0; border-top:1px solid #eee;">
-        <div style="width:100%; text-align:center;">
-            {data['html']}
-        </div>
-    </div>
-    """
 
 custom_header = """
 <style>
@@ -443,9 +427,11 @@ custom_header = """
     border-radius: 12px !important;
 }
 
-/* 우측 상단 버튼 공통 스타일 */
-.map-btn {
+/* 우측 상단 '지도 정위치' 버튼 */
+.reset-map-btn {
     position: fixed;
+    top: 15px;
+    right: 15px;
     z-index: 99999;
     background: #ffffff;
     border: 3px solid #000000;
@@ -457,54 +443,34 @@ custom_header = """
     cursor: pointer;
     color: #111;
 }
-.map-btn:hover {
-    background: #f0f0f0;
-}
 
-/* 우측 상단 '지도 정위치' 버튼 */
-.reset-map-btn {
-    top: 15px;
+/* 우측 상단 '메뉴 한번에 보기 / 닫기' 버튼 */
+.toggle-all-btn {
+    position: fixed;
+    top: 70px;
     right: 15px;
+    z-index: 99999;
+    background: #111111;
+    border: 3px solid #000000;
+    padding: 10px 16px;
+    font-weight: bold;
+    font-size: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    color: #ffffff;
+    text-align: center;
 }
-
-/* 우측 상단 '전체 메뉴 보기' 버튼 */
-.view-all-btn {
-    top: 15px;
-    right: 145px;
-    background: #ffeaa7;
+.toggle-all-btn:hover {
+    background: #333333;
 }
 </style>
-
-<!-- 전체 메뉴 모아보기 모달 창 -->
-<div id="allMenusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
-    <div style="background:#f8f9fa; width:100%; max-width:600px; max-height:88vh; border-radius:16px; overflow-y:auto; padding:25px; box-shadow:0 10px 35px rgba(0,0,0,0.4); position:relative; box-sizing:border-box;">
-        <button onclick="toggleAllMenus(false)" style="position:sticky; top:0; float:right; background:#e74c3c; color:#fff; border:none; width:40px; height:40px; border-radius:50%; font-size:24px; font-weight:bold; cursor:pointer; z-index:10; box-shadow:0 2px 6px rgba(0,0,0,0.3);">&times;</button>
-        <h2 style="margin:0 0 20px 0; font-size:22px; color:#111; text-align:center; clear:both;">📋 오늘 가산 식단 한번에 보기</h2>
-        REPLACE_ALL_MENUS_HTML
-    </div>
-</div>
 
 <script>
 let initialCenter = null;
 let initialZoom = null;
 let mapObj = null;
-
-function resetMapView() {
-    if (mapObj && initialCenter && initialZoom) {
-        mapObj.closePopup();
-        mapObj.setView(initialCenter, initialZoom);
-    }
-}
-
-function toggleAllMenus(show) {
-    var modal = document.getElementById('allMenusModal');
-    if (show) {
-        if (mapObj) mapObj.closePopup();
-        modal.style.display = 'flex';
-    } else {
-        modal.style.display = 'none';
-    }
-}
+let allPopupsOpen = false;
 
 window.addEventListener('load', function() {
     setTimeout(function() {
@@ -515,34 +481,120 @@ window.addEventListener('load', function() {
                 initialCenter = mapObj.getCenter();
                 initialZoom = mapObj.getZoom();
 
-                # 1. 우측 상단 '지도 정위치' 버튼 생성
-                var resetBtn = document.createElement('div');
-                resetBtn.innerHTML = '🗺️ 지도 정위치';
-                resetBtn.className = 'map-btn reset-map-btn';
-                resetBtn.onclick = function() {
-                    toggleAllMenus(false);
-                    resetMapView();
+                // 1. 지도 정위치 버튼 기능
+                var btn = document.createElement('div');
+                btn.innerHTML = '🗺️ 지도 정위치';
+                btn.className = 'reset-map-btn';
+                btn.onclick = function() {
+                    if (mapObj) {
+                        mapObj.eachLayer(function(layer) {
+                            if (layer instanceof L.Marker && layer.getPopup()) {
+                                layer.closePopup();
+                            }
+                        });
+                        allPopupsOpen = false;
+                        var toggleBtn = document.querySelector('.toggle-all-btn');
+                        if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                        if (initialCenter && initialZoom) {
+                            mapObj.setView(initialCenter, initialZoom);
+                        }
+                    }
                 };
-                document.body.appendChild(resetBtn);
+                document.body.appendChild(btn);
 
-                # 2. 우측 상단 '전체 메뉴 보기' 버튼 생성
-                var viewAllBtn = document.createElement('div');
-                viewAllBtn.innerHTML = '📋 전체 메뉴 보기';
-                viewAllBtn.className = 'map-btn view-all-btn';
-                viewAllBtn.onclick = function() {
-                    toggleAllMenus(true);
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능
+                var toggleBtn = document.createElement('div');
+                toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                toggleBtn.className = 'toggle-all-btn';
+                toggleBtn.onclick = function() {
+                    if (!mapObj) return;
+                    if (!allPopupsOpen) {
+                        let curCenter = mapObj.getCenter();
+                        let curZoom = mapObj.getZoom();
+
+                        mapObj.eachLayer(function(layer) {
+                            if (layer instanceof L.Marker && layer.getPopup()) {
+                                layer.openPopup();
+                            }
+                        });
+                        
+                        mapObj.setView(curCenter, curZoom, {animate: false});
+                        
+                        setTimeout(function() {
+                            var popups = document.querySelectorAll('.leaflet-popup');
+                            if (popups.length > 0) {
+                                var screenW = window.innerWidth;
+                                var maxRight = screenW - 210;
+                                var startLeft = 15;
+                                var availableW = maxRight - startLeft;
+                                var popupW = Math.floor((availableW - (6 * (popups.length - 1))) / popups.length);
+                                if (popupW < 220) popupW = 220;
+
+                                popups.forEach(function(p, index) {
+                                    p.style.position = 'fixed';
+                                    p.style.top = '50px';
+                                    
+                                    var contentWrapper = p.querySelector('.leaflet-popup-content-wrapper');
+                                    if (contentWrapper) {
+                                        contentWrapper.style.width = popupW + 'px';
+                                    }
+                                    var content = p.querySelector('.leaflet-popup-content');
+                                    if (content) {
+                                        content.style.width = (popupW - 20) + 'px';
+                                        content.style.margin = '10px';
+                                    }
+                                    
+                                    var leftPos = startLeft + (index * (popupW + 6));
+                                    p.style.left = leftPos + 'px';
+                                    p.style.transform = 'none';
+                                });
+                            }
+                        }, 50);
+
+                        toggleBtn.innerHTML = '❌ 메뉴 닫기';
+                        allPopupsOpen = true;
+                    } else {
+                        mapObj.eachLayer(function(layer) {
+                            if (layer instanceof L.Marker && layer.getPopup()) {
+                                layer.closePopup();
+                            }
+                        });
+                        toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                        allPopupsOpen = false;
+                        if (initialCenter && initialZoom) {
+                            mapObj.setView(initialCenter, initialZoom);
+                        }
+                    }
                 };
-                document.body.appendChild(viewAllBtn);
+                document.body.appendChild(toggleBtn);
 
-                # 3. 팝업창 닫힐 때 정위치 복구
+                # 3. 개별 팝업이 닫힐 때 처리
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
-                        var openPopups = document.querySelectorAll('.leaflet-popup');
-                        var modalOpen = document.getElementById('allMenusModal').style.display === 'flex';
-                        if (openPopups.length === 0 && !modalOpen) {
-                            resetMapView();
+                        var anyOpen = false;
+                        mapObj.eachLayer(function(layer) {
+                            if (layer instanceof L.Marker && layer.getPopup() && layer.isPopupOpen()) {
+                                anyOpen = true;
+                            }
+                        });
+                        if (!anyOpen) {
+                            allPopupsOpen = false;
+                            var toggleBtn = document.querySelector('.toggle-all-btn');
+                            if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+                            
+                            var popups = document.querySelectorAll('.leaflet-popup');
+                            popups.forEach(function(p) {
+                                p.style.position = '';
+                                p.style.top = '';
+                                p.style.left = '';
+                                p.style.transform = '';
+                                var cw = p.querySelector('.leaflet-popup-content-wrapper');
+                                if (cw) cw.style.width = '';
+                                var c = p.querySelector('.leaflet-popup-content');
+                                if (c) { c.style.width = ''; c.style.margin = ''; }
+                            });
                         }
-                    }, 200);
+                    }, 150);
                 });
 
                 break;
@@ -551,29 +603,41 @@ window.addEventListener('load', function() {
     }, 400);
 });
 
-# 4. ESC 키를 누르면 모달창이나 팝업이 닫히면서 지도 정위치로 복구
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        toggleAllMenus(false);
-        resetMapView();
-    }
-});
-
-# 모달 바깥 배경 클릭 시 닫기
-window.addEventListener('click', function(e) {
-    var modal = document.getElementById('allMenusModal');
-    if (e.target === modal) {
-        toggleAllMenus(false);
+        if (mapObj) {
+            mapObj.eachLayer(function(layer) {
+                if (layer instanceof L.Marker && layer.getPopup()) {
+                    layer.closePopup();
+                }
+            });
+            allPopupsOpen = false;
+            var toggleBtn = document.querySelector('.toggle-all-btn');
+            if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+            var popups = document.querySelectorAll('.leaflet-popup');
+            popups.forEach(function(p) {
+                p.style.position = '';
+                p.style.top = '';
+                p.style.left = '';
+                p.style.transform = '';
+                var cw = p.querySelector('.leaflet-popup-content-wrapper');
+                if (cw) cw.style.width = '';
+                var c = p.querySelector('.leaflet-popup-content');
+                if (c) { c.style.width = ''; c.style.margin = ''; }
+            });
+            if (initialCenter && initialZoom) {
+                mapObj.setView(initialCenter, initialZoom);
+            }
+        }
     }
 });
 </script>
 """
-custom_header = custom_header.replace("REPLACE_ALL_MENUS_HTML", all_menus_inner_html)
 menu_map.get_root().html.add_child(folium.Element(custom_header))
 
 for data in scraped_data:
     popup_html = f"""
-    <div style="width:310px; text-align:center; padding-top:5px;">
+    <div style="width:310px; text-align:center; padding-top:5px; cursor:pointer;" onclick="if(window.mapObj) {{ window.mapObj.closePopup(); }}">
         <h3 style="margin:5px 0; font-size:19px; color:#333;">{data['name']}</h3>
         <p style="margin:0 0 8px 0; font-size:12px; color:#e74c3c; font-weight:bold;">
             🏢 회사에서 도보 약 {data['walk_min']}분 ({data['dist']}m)
@@ -582,6 +646,7 @@ for data in scraped_data:
         <div style="width:100%; overflow:visible; text-align:center;">
             {data['html']}
         </div>
+        <div style="font-size:11px; color:#888; margin-top:6px; font-style:italic;">(이미지나 상자를 터치하면 닫힙니다)</div>
     </div>
     """
 
@@ -608,7 +673,7 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
-        popup=folium.Popup(popup_html, max_width=360),
+        popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False),
         tooltip=data["name"],
         icon=custom_icon
     ).add_to(menu_map)
@@ -630,6 +695,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 f-string 문법 에러 수정 완료!")
+print("🎉 오정 크롭 + 전체 보기 토글 버튼 완벽 적용 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
