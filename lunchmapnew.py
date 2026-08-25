@@ -38,15 +38,16 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 (요일별 Crop) - 기존 정상 작동 버전
+# 3. 오정 메뉴 (요일별 Crop - 좌표 정밀 보정 버전)
 # ==========================================================
 def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        left_margin = width * 0.16
-        right_margin = width * 0.83
+        # [좌표 정밀 보정] 오정 메뉴표의 실제 시작/끝 위치에 맞춰 좌우 마진 미세 조정
+        left_margin = width * 0.19
+        right_margin = width * 0.825
         top_margin = height * 0.18
         bottom_margin = height * 0.88
 
@@ -695,6 +696,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 기존 완벽한 오정 크롭 + 정위치/한번에보기 버튼 복구 완료!")
+print("🎉 오정 크롭 좌표 정밀 보정 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
