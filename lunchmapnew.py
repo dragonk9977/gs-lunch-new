@@ -38,16 +38,16 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 (요일별 Crop - 좌표 정밀 보정 버전)
+# 3. 오정 메뉴 (요일별 Crop - 격자선 제거 정밀 보정 버전)
 # ==========================================================
 def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        # [좌표 정밀 보정] 오정 메뉴표의 실제 시작/끝 위치에 맞춰 좌우 마진 미세 조정
-        left_margin = width * 0.19
-        right_margin = width * 0.825
+        # [좌표 정밀 보정] 오른쪽 격자선이 들어오지 않도록 범위를 살짝 안쪽으로 조정
+        left_margin = width * 0.175
+        right_margin = width * 0.815
         top_margin = height * 0.18
         bottom_margin = height * 0.88
 
@@ -386,7 +386,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (정위치 + 한번에보기/닫기 버튼 포함)
+# 12. Selenium 종료 및 구글 지도 생성 (X표 및 ESC 정위치 복구 완벽 보장)
 # ==========================================================
 driver.quit()
 
@@ -473,6 +473,35 @@ let initialZoom = null;
 let mapObj = null;
 let allPopupsOpen = false;
 
+function resetMapView() {
+    if (mapObj) {
+        mapObj.eachLayer(function(layer) {
+            if (layer instanceof L.Marker && layer.getPopup()) {
+                layer.closePopup();
+            }
+        });
+        allPopupsOpen = false;
+        var toggleBtn = document.querySelector('.toggle-all-btn');
+        if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
+        
+        var popups = document.querySelectorAll('.leaflet-popup');
+        popups.forEach(function(p) {
+            p.style.position = '';
+            p.style.top = '';
+            p.style.left = '';
+            p.style.transform = '';
+            var cw = p.querySelector('.leaflet-popup-content-wrapper');
+            if (cw) cw.style.width = '';
+            var c = p.querySelector('.leaflet-popup-content');
+            if (c) { c.style.width = ''; c.style.margin = ''; }
+        });
+
+        if (initialCenter && initialZoom) {
+            mapObj.setView(initialCenter, initialZoom);
+        }
+    }
+}
+
 window.addEventListener('load', function() {
     setTimeout(function() {
         for (var key in window) {
@@ -487,19 +516,7 @@ window.addEventListener('load', function() {
                 btn.innerHTML = '🗺️ 지도 정위치';
                 btn.className = 'reset-map-btn';
                 btn.onclick = function() {
-                    if (mapObj) {
-                        mapObj.eachLayer(function(layer) {
-                            if (layer instanceof L.Marker && layer.getPopup()) {
-                                layer.closePopup();
-                            }
-                        });
-                        allPopupsOpen = false;
-                        var toggleBtn = document.querySelector('.toggle-all-btn');
-                        if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
-                        if (initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom);
-                        }
-                    }
+                    resetMapView();
                 };
                 document.body.appendChild(btn);
 
@@ -555,21 +572,12 @@ window.addEventListener('load', function() {
                         toggleBtn.innerHTML = '❌ 메뉴 닫기';
                         allPopupsOpen = true;
                     } else {
-                        mapObj.eachLayer(function(layer) {
-                            if (layer instanceof L.Marker && layer.getPopup()) {
-                                layer.closePopup();
-                            }
-                        });
-                        toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
-                        allPopupsOpen = false;
-                        if (initialCenter && initialZoom) {
-                            mapObj.setView(initialCenter, initialZoom);
-                        }
+                        resetMapView();
                     }
                 };
                 document.body.appendChild(toggleBtn);
 
-                // 3. 개별 팝업이 닫힐 때 처리
+                // 3. 개별 팝업이 닫힐 때(X표 클릭 포함) 처리
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var anyOpen = false;
@@ -579,21 +587,7 @@ window.addEventListener('load', function() {
                             }
                         });
                         if (!anyOpen) {
-                            allPopupsOpen = false;
-                            var toggleBtn = document.querySelector('.toggle-all-btn');
-                            if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
-                            
-                            var popups = document.querySelectorAll('.leaflet-popup');
-                            popups.forEach(function(p) {
-                                p.style.position = '';
-                                p.style.top = '';
-                                p.style.left = '';
-                                p.style.transform = '';
-                                var cw = p.querySelector('.leaflet-popup-content-wrapper');
-                                if (cw) cw.style.width = '';
-                                var c = p.querySelector('.leaflet-popup-content');
-                                if (c) { c.style.width = ''; c.style.margin = ''; }
-                            });
+                            resetMapView();
                         }
                     }, 150);
                 });
@@ -604,32 +598,17 @@ window.addEventListener('load', function() {
     }, 400);
 });
 
+// 4. X 버튼(leaflet-popup-close-button) 클릭 시 무조건 정위치로 리셋
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('leaflet-popup-close-button') || e.target.closest('.leaflet-popup-close-button')) {
+        resetMapView();
+    }
+});
+
+// 5. ESC 키를 눌렀을 때 지도 정위치로 복구
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        if (mapObj) {
-            mapObj.eachLayer(function(layer) {
-                if (layer instanceof L.Marker && layer.getPopup()) {
-                    layer.closePopup();
-                }
-            });
-            allPopupsOpen = false;
-            var toggleBtn = document.querySelector('.toggle-all-btn');
-            if (toggleBtn) toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
-            var popups = document.querySelectorAll('.leaflet-popup');
-            popups.forEach(function(p) {
-                p.style.position = '';
-                p.style.top = '';
-                p.style.left = '';
-                p.style.transform = '';
-                var cw = p.querySelector('.leaflet-popup-content-wrapper');
-                if (cw) cw.style.width = '';
-                var c = p.querySelector('.leaflet-popup-content');
-                if (c) { c.style.width = ''; c.style.margin = ''; }
-            });
-            if (initialCenter && initialZoom) {
-                mapObj.setView(initialCenter, initialZoom);
-            }
-        }
+        resetMapView();
     }
 });
 </script>
@@ -696,6 +675,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 크롭 좌표 정밀 보정 완료!")
+print("🎉 오정 이미지 격자선 제거 및 X버튼/ESC 정위치 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
