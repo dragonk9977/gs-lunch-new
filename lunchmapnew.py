@@ -38,7 +38,7 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 (요일별 Crop)
+# 3. 오정 메뉴 (요일별 Crop) - 기존 정상 작동 버전
 # ==========================================================
 def crop_ojeong_by_weekday(image_path):
     try:
@@ -321,7 +321,7 @@ def get_threads_menu(driver, url):
         
         filtered_lines = []
         for line in lines[start_idx:]:
-            line = line.strip()
+            line = line.strip().replace('\\', '')
             if not line:
                 continue
             if "월" in line and "일" in line and target_date1 not in line and target_date2 not in line:
@@ -364,7 +364,7 @@ for item in cafeteria_list:
 
     if item["type"] == "ojeong":
         src = crop_ojeong_by_weekday(item["url"])
-        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성
+# 12. Selenium 종료 및 구글 지도 생성 (정위치 + 한번에보기/닫기 버튼 포함)
 # ==========================================================
 driver.quit()
 
@@ -568,7 +568,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(toggleBtn);
 
-                # 3. 개별 팝업이 닫힐 때 처리
+                // 3. 개별 팝업이 닫힐 때 처리
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var anyOpen = false;
@@ -695,6 +695,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 크롭 + 전체 보기 토글 버튼 완벽 적용 완료!")
+print("🎉 기존 완벽한 오정 크롭 + 정위치/한번에보기 버튼 복구 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
