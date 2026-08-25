@@ -38,22 +38,24 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 (요일별 Crop - 격자선 제거 정밀 보정 버전)
+# 3. 오정 메뉴 (빨간색 박스 가이드라인 기준 완벽 5등분 크롭)
 # ==========================================================
 def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        # [좌표 정밀 보정] 오른쪽 격자선이 들어오지 않도록 범위를 살짝 안쪽으로 조정
-        left_margin = width * 0.175
-        right_margin = width * 0.815
-        top_margin = height * 0.18
-        bottom_margin = height * 0.88
+        # [빨간색 박스 기준 완벽 보정]
+        # 표의 맨 왼쪽 테두리부터 맨 오른쪽 테두리까지를 정확히 5등분합니다.
+        left_margin = width * 0.05   # 표 왼쪽 시작점
+        right_margin = width * 0.95  # 표 오른쪽 끝점
+        top_margin = height * 0.08   # 상단 날짜 헤더 포함
+        bottom_margin = height * 0.92 # 하단 백미/흑미 칸 포함 (안내문구 제외)
 
         table_width = right_margin - left_margin
         col_width = table_width / 5
 
+        # 오늘 요일에 해당하는 열만 정확하게 타겟팅
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
@@ -69,7 +71,7 @@ def crop_ojeong_by_weekday(image_path):
         cropped_img.save(buffered, format="JPEG", quality=95)
         encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료")
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료 (빨간 박스 기준)")
         return "data:image/jpeg;base64," + encoded_string
     except Exception as e:
         print(f"  -> [오정] Crop 실패 : {e}")
@@ -386,7 +388,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (X표 및 ESC 정위치 복구 완벽 보장)
+# 12. Selenium 종료 및 구글 지도 생성 (정위치 + X버튼/ESC 복구 완벽 반영)
 # ==========================================================
 driver.quit()
 
@@ -577,7 +579,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(toggleBtn);
 
-                // 3. 개별 팝업이 닫힐 때(X표 클릭 포함) 처리
+                // 3. 개별 팝업이 닫힐 때 처리
                 mapObj.on('popupclose', function() {
                     setTimeout(function() {
                         var anyOpen = false;
@@ -598,14 +600,14 @@ window.addEventListener('load', function() {
     }, 400);
 });
 
-// 4. X 버튼(leaflet-popup-close-button) 클릭 시 무조건 정위치로 리셋
+// 4. X 버튼 클릭 시 정위치 복구
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('leaflet-popup-close-button') || e.target.closest('.leaflet-popup-close-button')) {
         resetMapView();
     }
 });
 
-// 5. ESC 키를 눌렀을 때 지도 정위치로 복구
+// 5. ESC 키를 눌렀을 때 정위치 복구
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         resetMapView();
@@ -675,6 +677,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 오정 이미지 격자선 제거 및 X버튼/ESC 정위치 복구 완료!")
+print("🎉 빨간 박스 가이드라인 100% 반영 & 정위치 복구 최종 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
