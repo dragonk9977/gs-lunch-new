@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (전체 메뉴 모아보기 팝업 모달 추가)
+# 12. Selenium 종료 및 구글 지도 생성 (에러 없는 일반 문자열 교체 방식 적용)
 # ==========================================================
 driver.quit()
 
@@ -417,7 +417,7 @@ for data in scraped_data:
     </div>
     """
 
-custom_header = f"""
+custom_header = """
 <style>
 @font-face {
     font-family: 'KakaoBigFont';
@@ -428,7 +428,7 @@ custom_header = f"""
     font-family: 'KakaoBigFont', sans-serif !important;
 }
 
-.leaflet-popup-close-button {{
+.leaflet-popup-close-button {
     width: 40px !important;
     height: 40px !important;
     padding: 8px !important;
@@ -437,14 +437,14 @@ custom_header = f"""
     font-weight: bold !important;
 }
 
-.leaflet-popup-content-wrapper {{
+.leaflet-popup-content-wrapper {
     background: rgba(255, 255, 255, 0.98) !important;
     box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important;
     border-radius: 12px !important;
 }
 
 /* 우측 상단 버튼 공통 스타일 */
-.map-btn {{
+.map-btn {
     position: fixed;
     z-index: 99999;
     background: #ffffff;
@@ -456,23 +456,23 @@ custom_header = f"""
     box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     cursor: pointer;
     color: #111;
-}}
-.map-btn:hover {{
+}
+.map-btn:hover {
     background: #f0f0f0;
-}}
+}
 
 /* 우측 상단 '지도 정위치' 버튼 */
-.reset-map-btn {{
+.reset-map-btn {
     top: 15px;
     right: 15px;
-}}
+}
 
 /* 우측 상단 '전체 메뉴 보기' 버튼 */
-.view-all-btn {{
+.view-all-btn {
     top: 15px;
     right: 145px;
     background: #ffeaa7;
-}}
+}
 </style>
 
 <!-- 전체 메뉴 모아보기 모달 창 -->
@@ -480,7 +480,7 @@ custom_header = f"""
     <div style="background:#f8f9fa; width:100%; max-width:600px; max-height:88vh; border-radius:16px; overflow-y:auto; padding:25px; box-shadow:0 10px 35px rgba(0,0,0,0.4); position:relative; box-sizing:border-box;">
         <button onclick="toggleAllMenus(false)" style="position:sticky; top:0; float:right; background:#e74c3c; color:#fff; border:none; width:40px; height:40px; border-radius:50%; font-size:24px; font-weight:bold; cursor:pointer; z-index:10; box-shadow:0 2px 6px rgba(0,0,0,0.3);">&times;</button>
         <h2 style="margin:0 0 20px 0; font-size:22px; color:#111; text-align:center; clear:both;">📋 오늘 가산 식단 한번에 보기</h2>
-        {all_menus_inner_html}
+        REPLACE_ALL_MENUS_HTML
     </div>
 </div>
 
@@ -496,78 +496,79 @@ function resetMapView() {
     }
 }
 
-function toggleAllMenus(show) {{
+function toggleAllMenus(show) {
     var modal = document.getElementById('allMenusModal');
-    if (show) {{
+    if (show) {
         if (mapObj) mapObj.closePopup();
         modal.style.display = 'flex';
-    }} else {{
+    } else {
         modal.style.display = 'none';
-    }}
-}}
+    }
+}
 
-window.addEventListener('load', function() {{
-    setTimeout(function() {{
-        for (var key in window) {{
-            if (window[key] && window[key] instanceof L.Map) {{
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        for (var key in window) {
+            if (window[key] && window[key] instanceof L.Map) {
                 mapObj = window[key];
                 window.mapObj = mapObj;
                 initialCenter = mapObj.getCenter();
                 initialZoom = mapObj.getZoom();
 
-                // 1. 우측 상단 '지도 정위치' 버튼 생성
+                # 1. 우측 상단 '지도 정위치' 버튼 생성
                 var resetBtn = document.createElement('div');
                 resetBtn.innerHTML = '🗺️ 지도 정위치';
                 resetBtn.className = 'map-btn reset-map-btn';
-                resetBtn.onclick = function() {{
+                resetBtn.onclick = function() {
                     toggleAllMenus(false);
                     resetMapView();
-                }};
+                };
                 document.body.appendChild(resetBtn);
 
-                // 2. 우측 상단 '전체 메뉴 보기' 버튼 생성
+                # 2. 우측 상단 '전체 메뉴 보기' 버튼 생성
                 var viewAllBtn = document.createElement('div');
                 viewAllBtn.innerHTML = '📋 전체 메뉴 보기';
                 viewAllBtn.className = 'map-btn view-all-btn';
-                viewAllBtn.onclick = function() {{
+                viewAllBtn.onclick = function() {
                     toggleAllMenus(true);
-                }};
+                };
                 document.body.appendChild(viewAllBtn);
 
-                // 3. 팝업창 닫힐 때 정위치 복구
-                mapObj.on('popupclose', function() {{
-                    setTimeout(function() {{
+                # 3. 팝업창 닫힐 때 정위치 복구
+                mapObj.on('popupclose', function() {
+                    setTimeout(function() {
                         var openPopups = document.querySelectorAll('.leaflet-popup');
                         var modalOpen = document.getElementById('allMenusModal').style.display === 'flex';
-                        if (openPopups.length === 0 && !modalOpen) {{
+                        if (openPopups.length === 0 && !modalOpen) {
                             resetMapView();
-                        }}
-                    }}, 200);
-                }};
+                        }
+                    }, 200);
+                });
 
                 break;
-            }}
-        }}
-    }}, 400);
-}});
+            }
+        }
+    }, 400);
+});
 
-// 4. ESC 키를 누르면 모달창이나 팝업이 닫히면서 지도 정위치로 복구
-document.addEventListener('keydown', function(e) {{
-    if (e.key === 'Escape') {{
+# 4. ESC 키를 누르면 모달창이나 팝업이 닫히면서 지도 정위치로 복구
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
         toggleAllMenus(false);
         resetMapView();
-    }}
-}});
+    }
+});
 
-// 모달 바깥 배경 클릭 시 닫기
-window.addEventListener('click', function(e) {{
+# 모달 바깥 배경 클릭 시 닫기
+window.addEventListener('click', function(e) {
     var modal = document.getElementById('allMenusModal');
-    if (e.target === modal) {{
+    if (e.target === modal) {
         toggleAllMenus(false);
-    }}
-}});
+    }
+});
 </script>
 """
+custom_header = custom_header.replace("REPLACE_ALL_MENUS_HTML", all_menus_inner_html)
 menu_map.get_root().html.add_child(folium.Element(custom_header))
 
 for data in scraped_data:
@@ -629,6 +630,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 전체 메뉴 모아보기 기능 추가 완료!")
+print("🎉 f-string 문법 에러 수정 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
