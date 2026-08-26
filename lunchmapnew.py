@@ -58,7 +58,8 @@ def crop_ojeong_by_weekday(image_path):
 
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        max_height = 700
+        # 팝업창 크기에 알맞게 높이 조절 (520px로 최적화)
+        max_height = 520
         if cropped_img.height > max_height:
             ratio = max_height / cropped_img.height
             new_width = int(cropped_img.width * ratio)
@@ -364,19 +365,20 @@ for item in cafeteria_list:
 
     if item["type"] == "ojeong":
         src = crop_ojeong_by_weekday(item["url"])
-        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
+        # 이미지 크기가 팝업창에 딱 맞도록 max-height 및 width 반응형 설정
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; max-height:480px; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
-        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">온정찬 메뉴 이미지를 찾지 못했습니다.</div>'
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:480px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">온정찬 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "kakao_profile":
         img_src = get_kakao_profile_image(driver, item["url"], item["name"])
-        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:480px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "kakao_first":
         img_src = get_kakao_first_image(driver, item["url"], item["name"])
-        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:700px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:480px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "threads":
         html_content = get_threads_menu(driver, item["url"])
@@ -385,7 +387,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (가로 정렬 간격 및 크기 최적화 완료)
+# 12. Selenium 종료 및 구글 지도 생성 (반응형 팝업 너비 및 간격 최적화)
 # ==========================================================
 driver.quit()
 
@@ -519,7 +521,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(btn);
 
-                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (가로 폭 및 여백 완벽 균등 정렬)
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (5개 팝업이 화면에 딱 맞춰서 쪼르륵 정렬되도록 계산)
                 var toggleBtn = document.createElement('div');
                 toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                 toggleBtn.className = 'toggle-all-btn';
@@ -541,20 +543,20 @@ window.addEventListener('load', function() {
                             var popups = document.querySelectorAll('.leaflet-popup');
                             if (popups.length > 0) {
                                 var screenW = window.innerWidth;
-                                var maxRight = screenW - 200; // 우측 버튼 공간 확보
+                                var maxRight = screenW - 190; // 우측 버튼 공간 확보
                                 var startLeft = 10;
                                 var availableW = maxRight - startLeft;
-                                var popupW = Math.floor((availableW - (12 * (popups.length - 1))) / popups.length);
-                                if (popupW < 220) popupW = 220;
+                                var popupW = Math.floor((availableW - (8 * (popups.length - 1))) / popups.length);
+                                if (popupW < 210) popupW = 210; // 최소 너비 보장
 
                                 popups.forEach(function(p, index) {
                                     p.style.position = 'fixed';
-                                    p.style.top = '45px';
+                                    p.style.top = '40px';
                                     
                                     var contentWrapper = p.querySelector('.leaflet-popup-content-wrapper');
                                     if (contentWrapper) {
                                         contentWrapper.style.width = popupW + 'px';
-                                        contentWrapper.style.maxHeight = '85vh';
+                                        contentWrapper.style.maxHeight = '90vh';
                                         contentWrapper.style.overflowY = 'auto';
                                     }
                                     var content = p.querySelector('.leaflet-popup-content');
@@ -563,7 +565,7 @@ window.addEventListener('load', function() {
                                         content.style.margin = '10px';
                                     }
                                     
-                                    var leftPos = startLeft + (index * (popupW + 12));
+                                    var leftPos = startLeft + (index * (popupW + 8));
                                     p.style.left = leftPos + 'px';
                                     p.style.transform = 'none';
                                 });
@@ -618,16 +620,16 @@ menu_map.get_root().html.add_child(folium.Element(custom_header))
 
 for data in scraped_data:
     popup_html = f"""
-    <div style="width:310px; text-align:center; padding-top:5px; cursor:pointer;" onclick="if(window.mapObj) {{ window.mapObj.closePopup(); }}">
-        <h3 style="margin:5px 0; font-size:19px; color:#333;">{data['name']}</h3>
-        <p style="margin:0 0 8px 0; font-size:12px; color:#e74c3c; font-weight:bold;">
+    <div style="width:260px; text-align:center; padding-top:2px; cursor:pointer;" onclick="if(window.mapObj) {{ window.mapObj.closePopup(); }}">
+        <h3 style="margin:4px 0; font-size:18px; color:#333;">{data['name']}</h3>
+        <p style="margin:0 0 6px 0; font-size:11px; color:#e74c3c; font-weight:bold;">
             🏢 회사에서 도보 약 {data['walk_min']}분 ({data['dist']}m)
         </p>
-        <hr style="margin:5px 0 8px 0;">
+        <hr style="margin:4px 0 6px 0;">
         <div style="width:100%; overflow:visible; text-align:center;">
             {data['html']}
         </div>
-        <div style="font-size:11px; color:#888; margin-top:6px; font-style:italic;">(이미지나 상자를 터치하면 닫힙니다)</div>
+        <div style="font-size:10px; color:#888; margin-top:4px; font-style:italic;">(상자를 터치하면 닫힙니다)</div>
     </div>
     """
 
@@ -654,7 +656,7 @@ for data in scraped_data:
 
     folium.Marker(
         location=[data["lat"], data["lng"]],
-        popup=folium.Popup(popup_html, max_width=360, auto_close=False, close_onclick=False),
+        popup=folium.Popup(popup_html, max_width=320, auto_close=False, close_onclick=False),
         tooltip=data["name"],
         icon=custom_icon
     ).add_to(menu_map)
@@ -676,6 +678,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 전체 보기 가로 정렬 레이아웃 및 팝업 간격 최적화 완료!")
+print("🎉 팝업 이미지 반응형 크기 조절 및 전체 보기 가로 정렬 최적화 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
