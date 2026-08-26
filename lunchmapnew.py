@@ -38,24 +38,21 @@ ojeong_weekday_index = min(today_weekday_index, 4)
 print(f"\n{'='*60}\n오늘 날짜 : {today_date_str_space} ({today_weekday}요일)\n{'='*60}")
 
 # ==========================================================
-# 3. 오정 메뉴 (빨간색 박스 가이드라인 기준 완벽 5등분 크롭)
+# 3. 오정 메뉴 (요일별 Crop)
 # ==========================================================
 def crop_ojeong_by_weekday(image_path):
     try:
         img = Image.open(image_path)
         width, height = img.size
 
-        # [빨간색 박스 기준 완벽 보정]
-        # 표의 맨 왼쪽 테두리부터 맨 오른쪽 테두리까지를 정확히 5등분합니다.
-        left_margin = width * 0.05   # 표 왼쪽 시작점
-        right_margin = width * 0.95  # 표 오른쪽 끝점
-        top_margin = height * 0.08   # 상단 날짜 헤더 포함
-        bottom_margin = height * 0.92 # 하단 백미/흑미 칸 포함 (안내문구 제외)
+        left_margin = width * 0.05
+        right_margin = width * 0.95
+        top_margin = height * 0.08
+        bottom_margin = height * 0.92
 
         table_width = right_margin - left_margin
         col_width = table_width / 5
 
-        # 오늘 요일에 해당하는 열만 정확하게 타겟팅
         crop_left = left_margin + (col_width * ojeong_weekday_index)
         crop_right = crop_left + col_width
 
@@ -71,7 +68,7 @@ def crop_ojeong_by_weekday(image_path):
         cropped_img.save(buffered, format="JPEG", quality=95)
         encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료 (빨간 박스 기준)")
+        print(f"  -> [오정] {['월', '화', '수', '목', '금'][ojeong_weekday_index]}요일 메뉴 크롭 완료")
         return "data:image/jpeg;base64," + encoded_string
     except Exception as e:
         print(f"  -> [오정] Crop 실패 : {e}")
@@ -388,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (정위치 + X버튼/ESC 복구 완벽 반영)
+# 12. Selenium 종료 및 구글 지도 생성 (가로 정렬 간격 및 크기 최적화 완료)
 # ==========================================================
 driver.quit()
 
@@ -522,7 +519,7 @@ window.addEventListener('load', function() {
                 };
                 document.body.appendChild(btn);
 
-                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능
+                // 2. 메뉴 한번에 보기 / 닫기 토글 버튼 기능 (가로 폭 및 여백 완벽 균등 정렬)
                 var toggleBtn = document.createElement('div');
                 toggleBtn.innerHTML = '📋 메뉴 한번에 보기 / 닫기';
                 toggleBtn.className = 'toggle-all-btn';
@@ -544,19 +541,21 @@ window.addEventListener('load', function() {
                             var popups = document.querySelectorAll('.leaflet-popup');
                             if (popups.length > 0) {
                                 var screenW = window.innerWidth;
-                                var maxRight = screenW - 210;
-                                var startLeft = 15;
+                                var maxRight = screenW - 200; // 우측 버튼 공간 확보
+                                var startLeft = 10;
                                 var availableW = maxRight - startLeft;
-                                var popupW = Math.floor((availableW - (6 * (popups.length - 1))) / popups.length);
+                                var popupW = Math.floor((availableW - (12 * (popups.length - 1))) / popups.length);
                                 if (popupW < 220) popupW = 220;
 
                                 popups.forEach(function(p, index) {
                                     p.style.position = 'fixed';
-                                    p.style.top = '50px';
+                                    p.style.top = '45px';
                                     
                                     var contentWrapper = p.querySelector('.leaflet-popup-content-wrapper');
                                     if (contentWrapper) {
                                         contentWrapper.style.width = popupW + 'px';
+                                        contentWrapper.style.maxHeight = '85vh';
+                                        contentWrapper.style.overflowY = 'auto';
                                     }
                                     var content = p.querySelector('.leaflet-popup-content');
                                     if (content) {
@@ -564,7 +563,7 @@ window.addEventListener('load', function() {
                                         content.style.margin = '10px';
                                     }
                                     
-                                    var leftPos = startLeft + (index * (popupW + 6));
+                                    var leftPos = startLeft + (index * (popupW + 12));
                                     p.style.left = leftPos + 'px';
                                     p.style.transform = 'none';
                                 });
@@ -677,6 +676,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 빨간 박스 가이드라인 100% 반영 & 정위치 복구 최종 완료!")
+print("🎉 전체 보기 가로 정렬 레이아웃 및 팝업 간격 최적화 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
