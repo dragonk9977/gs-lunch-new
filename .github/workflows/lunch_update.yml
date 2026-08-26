@@ -2,7 +2,7 @@ name: Auto-update lunch map
 
 on:
   schedule:
-    - cron: '30 1 * * 1-5'
+    - cron: '40 1 * * 1-5'  # 한국 시간 평일 오전 10시 40분
   repository_dispatch:
     types: [update_lunch]
   workflow_dispatch:
