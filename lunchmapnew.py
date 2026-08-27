@@ -385,7 +385,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (5등분 그리드 대시보드 모달 적용)
+# 12. Selenium 종료 및 구글 지도 생성 (모바일 뷰포트 메타 태그 + 반응형 그리드 적용)
 # ==========================================================
 driver.quit()
 
@@ -401,7 +401,6 @@ menu_map = folium.Map(
     attr='Google'
 )
 
-# 5개 식당 카드를 그리드 HTML로 생성
 dashboard_cards_html = ""
 for data in scraped_data:
     dashboard_cards_html += f"""
@@ -420,6 +419,7 @@ for data in scraped_data:
     """
 
 custom_header = f"""
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 @font-face {{
     font-family: 'KakaoBigFont';
@@ -486,7 +486,7 @@ custom_header = f"""
     background: #333333;
 }}
 
-/* 5등분 대시보드 모달 스타일 (사용자님 스케치 반영) */
+/* 대시보드 모달 기본 스타일 (PC: 5열 고정) */
 #dashboardModal {{
     display: none;
     position: fixed;
@@ -526,9 +526,15 @@ custom_header = f"""
     overflow-y: auto;
 }}
 
-@media (max-width: 1200px) {{
+/* 📱 모바일 화면 최적화 (900px 이하): 1열 세로 스크롤 정렬 */
+@media (max-width: 900px) {{
     .dashboard-grid {{
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: 1fr;
+    }}
+    .dashboard-container {{
+        width: 98vw;
+        height: 95vh;
+        padding: 10px;
     }}
 }}
 </style>
@@ -688,6 +694,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 5등분 대시보드 모달 창 적용 완료!")
+print("🎉 모바일 뷰포트 메타 태그 적용 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
