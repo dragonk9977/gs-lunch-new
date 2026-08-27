@@ -58,7 +58,7 @@ def crop_ojeong_by_weekday(image_path):
 
         cropped_img = img.crop((crop_left, top_margin, crop_right, bottom_margin))
 
-        max_height = 450
+        max_height = 420
         if cropped_img.height > max_height:
             ratio = max_height / cropped_img.height
             new_width = int(cropped_img.width * ratio)
@@ -75,38 +75,48 @@ def crop_ojeong_by_weekday(image_path):
         return None
 
 # ==========================================================
-# 4. 식당 목록 (총 5곳)
+# 4. 식당 목록 및 지도 마커 겹침 방지 미세 오프셋 설정
 # ==========================================================
 cafeteria_list = [
     {
         "name": "오정",
         "address": "서울 금천구 가산디지털2로 30",
         "type": "ojeong",
-        "url": OJEONG_IMAGE_PATH
+        "url": OJEONG_IMAGE_PATH,
+        "lat_offset": 0.0000,
+        "lng_offset": -0.0003
     },
     {
         "name": "온정찬",
         "address": "서울 금천구 가산디지털1로 75-15",
         "type": "kakao_posts",
-        "url": "https://pf.kakao.com/_UIdXn/posts"
+        "url": "https://pf.kakao.com/_UIdXn/posts",
+        "lat_offset": 0.0002,
+        "lng_offset": 0.0002
     },
     {
         "name": "런치투게더",
         "address": "서울 금천구 가산디지털1로 58",
         "type": "kakao_profile",
-        "url": "https://pf.kakao.com/_swtYxl"
+        "url": "https://pf.kakao.com/_swtYxl",
+        "lat_offset": -0.0002,
+        "lng_offset": 0.0003
     },
     {
         "name": "런치타임",
         "address": "서울 금천구 가산디지털2로 24",
         "type": "threads",
-        "url": "https://www.threads.net/@lunchtime_ypp"
+        "url": "https://www.threads.net/@lunchtime_ypp",
+        "lat_offset": -0.0003,
+        "lng_offset": -0.0002
     },
     {
         "name": "밥심",
         "address": "서울 금천구 가산디지털2로 46",
         "type": "kakao_first",
-        "url": "https://pf.kakao.com/_mHWxjX"
+        "url": "https://pf.kakao.com/_mHWxjX",
+        "lat_offset": 0.0003,
+        "lng_offset": -0.0001
     }
 ]
 
@@ -358,25 +368,28 @@ print(f"\n{'='*60}\n자동 수집 시작 (총 5곳)\n{'='*60}")
 
 for item in cafeteria_list:
     print(f"\n[{item['name']}] 정보 수집 중...")
-    lat, lng = get_coords(item["address"])
-    dist, walk_min = calculate_walking_info((lat, lng))
+    base_lat, base_lng = get_coords(item["address"])
+    lat = base_lat + item["lat_offset"]
+    lng = base_lng + item["lng_offset"]
+    
+    dist, walk_min = calculate_walking_info((base_lat, base_lng))
     html_content = ""
 
     if item["type"] == "ojeong":
         src = crop_ojeong_by_weekday(item["url"])
-        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; max-height:420px; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
+        html_content = f'<img src="{src}" style="display:block; margin:0 auto; max-width:100%; max-height:380px; width:auto; height:auto; border-radius:6px;">' if src else "<div>오정 메뉴를 불러오지 못했습니다.</div>"
 
     elif item["type"] == "kakao_posts":
         img_src = get_kakao_posts_image(driver, item["url"])
-        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:420px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">온정찬 메뉴 이미지를 찾지 못했습니다.</div>'
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:380px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">온정찬 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "kakao_profile":
         img_src = get_kakao_profile_image(driver, item["url"], item["name"])
-        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:420px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:380px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "kakao_first":
         img_src = get_kakao_first_image(driver, item["url"], item["name"])
-        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:420px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
+        html_content = f'<img src="{img_src}" style="display:block; margin:0 auto; max-width:100%; max-height:380px; border-radius:6px;">' if img_src else '<div style="padding:20px; font-weight:bold;">카카오 메뉴 이미지를 찾지 못했습니다.</div>'
 
     elif item["type"] == "threads":
         html_content = get_threads_menu(driver, item["url"])
@@ -385,7 +398,7 @@ for item in cafeteria_list:
     time.sleep(1.5)
 
 # ==========================================================
-# 12. Selenium 종료 및 구글 지도 생성 (모바일 뷰포트 메타 태그 + 반응형 그리드 적용)
+# 12. Selenium 종료 및 구글 지도 생성 (가로 스와이프 대시보드 적용)
 # ==========================================================
 driver.quit()
 
@@ -404,7 +417,7 @@ menu_map = folium.Map(
 dashboard_cards_html = ""
 for data in scraped_data:
     dashboard_cards_html += f"""
-    <div style="background:#ffffff; border:2px solid #333333; border-radius:12px; padding:15px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 6px 16px rgba(0,0,0,0.15); box-sizing:border-box; max-height:82vh; overflow-y:auto;">
+    <div style="background:#ffffff; border:2px solid #333333; border-radius:12px; padding:15px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 6px 16px rgba(0,0,0,0.15); box-sizing:border-box; flex: 0 0 270px; max-height:82vh; overflow-y:auto;">
         <div>
             <h3 style="margin:5px 0; font-size:18px; color:#111; text-align:center; font-weight:bold;">{data['name']}</h3>
             <p style="margin:0 0 8px 0; font-size:12px; color:#e74c3c; font-weight:bold; text-align:center;">
@@ -486,7 +499,7 @@ custom_header = f"""
     background: #333333;
 }}
 
-/* 대시보드 모달 기본 스타일 (PC: 5열 고정) */
+/* 대시보드 모달 스타일 (PC 및 모바일 모두 가로 스와이프/스크롤 구조 유지) */
 #dashboardModal {{
     display: none;
     position: fixed;
@@ -499,7 +512,7 @@ custom_header = f"""
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
-    padding: 20px;
+    padding: 15px;
 }}
 
 .dashboard-container {{
@@ -517,33 +530,33 @@ custom_header = f"""
     position: relative;
 }}
 
+/* 5개 카드가 가로로 나란히 배치되고 모바일에서도 좌우 스크롤 가능 */
 .dashboard-grid {{
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    display: flex;
+    flex-direction: row;
     gap: 15px;
     width: 100%;
     height: calc(100% - 50px);
-    overflow-y: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
 }}
 
-/* 📱 모바일 화면 최적화 (900px 이하): 1열 세로 스크롤 정렬 */
 @media (max-width: 900px) {{
-    .dashboard-grid {{
-        grid-template-columns: 1fr;
-    }}
     .dashboard-container {{
         width: 98vw;
-        height: 95vh;
-        padding: 10px;
+        height: 94vh;
+        padding: 12px;
     }}
 }}
 </style>
 
-<!-- 5등분 대시보드 모달 창 -->
+<!-- 대시보드 모달 창 -->
 <div id="dashboardModal">
     <div class="dashboard-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h2 style="margin:0; font-size:22px; color:#111; font-weight:bold;">📋 오늘 가산 식단 한번에 보기</h2>
+            <h2 style="margin:0; font-size:20px; color:#111; font-weight:bold;">📋 오늘 가산 식단 한번에 보기</h2>
             <button onclick="toggleDashboard(false)" style="background:#e74c3c; color:#fff; border:none; width:36px; height:36px; border-radius:50%; font-size:22px; font-weight:bold; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3);">&times;</button>
         </div>
         <div class="dashboard-grid">
@@ -694,6 +707,6 @@ menu_map.save(output_file)
 
 print()
 print("=" * 60)
-print("🎉 모바일 뷰포트 메타 태그 적용 완료!")
+print("🎉 가로 스와이프 모달 및 마커 겹침 방지 적용 완료!")
 print(f"📄 파일 : {output_file}")
 print("=" * 60)
