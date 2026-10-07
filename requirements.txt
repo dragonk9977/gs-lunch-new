@@ -1,5 +1,5 @@
-folium
-pillow
+Pillow
 geopy
 selenium
-webdriver-manager
+requests
+google-generativeai
