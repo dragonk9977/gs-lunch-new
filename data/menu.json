@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-10-28 13:31:58",
-  "updated_at_display": "2026.10.28 13:31",
+  "updated_at": "2026-10-28 17:17:03",
+  "updated_at_display": "2026.10.28 17:17",
   "date": "2026-10-28",
   "date_display": "10월 28일",
   "weekday": "수",
@@ -30,7 +30,7 @@
       "dist": 91,
       "walk_min": 1,
       "source": "kakao_posts",
-      "html": "\n                <img\n                    src=\"https://k.kakaocdn.net/dn/GKht0/dJMcafBQDpT/pKaH4sLOpewgaRgmFOzCN1/img_xl.jpg\"\n                    class=\"menu-image\"\n                    alt=\"온정찬 오늘의 메뉴\"\n                >\n                ",
+      "html": "\n                <img\n                    src=\"https://k.kakaocdn.net/dn/MgzGa/dJMcadDkpW6/54YUBWPaF7mGjbUEGYfss0/img_xl.jpg\"\n                    class=\"menu-image\"\n                    alt=\"온정찬 오늘의 메뉴\"\n                >\n                ",
       "menu_status": "today",
       "menu_date": "2026-10-28"
     },
@@ -42,7 +42,7 @@
       "dist": 203,
       "walk_min": 3,
       "source": "kakao_profile",
-      "html": "\n                <img\n                    src=\"https://k.kakaocdn.net/dn/cTA75X/dJMcabl0z9C/y5q3GTquOkoKh8gFmRihC0/img.png\"\n                    class=\"menu-image\"\n                    alt=\"런치투게더 오늘의 메뉴\"\n                >\n                ",
+      "html": "\n                <img\n                    src=\"https://k.kakaocdn.net/dn/7JQD5/dJMcacd1swB/K8MTPn6l82DbybZUlxdEXK/img_xl.jpg\"\n                    class=\"menu-image\"\n                    alt=\"런치투게더 오늘의 메뉴\"\n                >\n                ",
       "menu_status": "today",
       "menu_date": "2026-10-28"
     },
